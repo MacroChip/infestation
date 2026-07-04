@@ -11,6 +11,8 @@ import {
   BOSS_PID,
   DEV_HURT_DMG,
   EYE_STAND,
+  GOLIATH_REWARD_INVULN_MS,
+  GOLIATH_REWARD_MINIGUN_MS,
   HP_MAX,
   MAX_INPUT_DT,
   MAX_PLAYERS,
@@ -90,6 +92,8 @@ export class Game {
   private projs = new Projectiles();
   private boss = new Boss();
   private events: GameEvent[] = [];
+  private goliathInvulnUntil = 0;
+  private goliathMinigunUntil = 0;
   private nextPid = 1;
   private tick = 0;
   private lastStepAt = 0;
@@ -123,7 +127,7 @@ export class Game {
     const out: CapsuleTarget[] = [];
     for (const p of this.players.values()) {
       if (!p.alive) continue;
-      if (excludeInvuln && p.invulnUntil > now) continue;
+      if (excludeInvuln && (p.invulnUntil > now || this.goliathInvulnUntil > now)) continue;
       out.push({
         pid: p.pid,
         x: p.move.x,
@@ -283,7 +287,14 @@ export class Game {
     p.placing = cmd.pl === 1;
     p.aim = cmd.aim === 1;
 
-    if (cmd.swap !== undefined && cmd.swap !== p.act && p.slots[cmd.swap]) {
+    const goliathMinigun = now < this.goliathMinigunUntil;
+    if (goliathMinigun) {
+      p.placing = false;
+      p.reloadEnd = 0;
+      p.useEnd = 0;
+    }
+
+    if (!goliathMinigun && cmd.swap !== undefined && cmd.swap !== p.act && p.slots[cmd.swap]) {
       p.act = cmd.swap;
       p.reloadEnd = 0;
       p.nextFire = Math.max(p.nextFire, now + SWAP_FIRE_LOCKOUT_MS);
@@ -293,10 +304,10 @@ export class Game {
         if (slot.mag <= 0 && p.reserve[def.ammo] > 0) this.tryReload(p, now);
       }
     }
-    if (cmd.rld === 1) this.tryReload(p, now);
-    if (cmd.use === 1) this.tryUseMedkit(p, now);
-    if (cmd.pick !== undefined) this.tryPickup(p, cmd.pick, now);
-    if (cmd.place) this.tryPlace(p, cmd.place, now);
+    if (!goliathMinigun && cmd.rld === 1) this.tryReload(p, now);
+    if (!goliathMinigun && cmd.use === 1) this.tryUseMedkit(p, now);
+    if (!goliathMinigun && cmd.pick !== undefined) this.tryPickup(p, cmd.pick, now);
+    if (!goliathMinigun && cmd.place) this.tryPlace(p, cmd.place, now);
     if (cmd.hurt === 1) {
       p.invulnUntil = 0; // dev helper must work right after spawning
       this.damagePlayer(p.pid, DEV_HURT_DMG, p.pid, 0, now);
@@ -331,18 +342,20 @@ export class Game {
   }
 
   private tryFire(p: SPlayer, fc: { sid: number; yaw: number; pit: number }, now: number): void {
+    const goliathMinigun = now < this.goliathMinigunUntil;
     const slot = p.slots[p.act];
-    if (!slot || p.reloadEnd > 0) return;
-    const def = WEAPONS[slot.w];
+    if (!goliathMinigun && (!slot || p.reloadEnd > 0)) return;
+    const w = goliathMinigun ? 'minigun' : slot!.w;
+    const def = WEAPONS[w];
     if (now < p.nextFire - 8) return;
-    if (slot.mag <= 0) return;
+    if (!goliathMinigun && slot!.mag <= 0) return;
     if (typeof fc.yaw !== 'number' || typeof fc.pit !== 'number' || typeof fc.sid !== 'number')
       return;
     if (!Number.isFinite(fc.yaw) || !Number.isFinite(fc.pit)) return;
 
-    slot.mag -= 1;
+    if (!goliathMinigun) slot!.mag -= 1;
     p.nextFire = now + def.interval * 1000 * 0.88;
-    if (slot.mag <= 0 && p.reserve[def.ammo] > 0) p.reloadEnd = now + def.reload * 1000;
+    if (!goliathMinigun && slot!.mag <= 0 && p.reserve[def.ammo] > 0) p.reloadEnd = now + def.reload * 1000;
     p.invulnUntil = 0; // firing drops spawn protection
 
     const pit = clamp(fc.pit, -1.5, 1.5);
@@ -354,12 +367,12 @@ export class Game {
     const origin = addScaled(eye, center, 0.3);
 
     const ids: number[] = [];
-    for (const dir of dirs) ids.push(this.projs.spawn(p.pid, slot.w, origin, dir));
+    for (const dir of dirs) ids.push(this.projs.spawn(p.pid, w, origin, dir));
 
     this.events.push({
       t: 'shot',
       pid: p.pid,
-      w: slot.w,
+      w,
       sid: fc.sid,
       spr: r3(spread),
       ox: r2(origin.x),
@@ -452,7 +465,7 @@ export class Game {
     const victim = this.players.get(victimPid);
     const attackerIsPlayer = attackerPid >= 0;
     if (this.boss.active && attackerIsPlayer && attackerPid !== victimPid) return;
-    if (!victim || !victim.alive || victim.invulnUntil > now) return;
+    if (!victim || !victim.alive || victim.invulnUntil > now || this.goliathInvulnUntil > now) return;
     victim.hp = Math.max(0, victim.hp - dmg);
     this.events.push({ t: 'hit', v: victimPid, a: attackerPid, dmg });
     if (victim.hp > 0) return;
@@ -581,7 +594,9 @@ export class Game {
         if (pid < 0) {
           // reserved pids: boss body or a missile - metal, not flesh
           this.pushImpact(proj, hit, 'w');
+          const before = this.events.length;
           this.boss.onBulletHit(pid, WEAPONS[proj.w].dmg, bossTargets, this.events, bossDamage);
+          if (this.events.slice(before).some((e) => e.t === 'bossdie')) this.startGoliathReward(now);
           return;
         }
         this.pushImpact(proj, hit, 'p');
@@ -617,10 +632,23 @@ export class Game {
     this.events.push({ t: 'imp', id: proj.id, x: r2(hit.x), y: r2(hit.y), z: r2(hit.z), k });
   }
 
+
+  private startGoliathReward(now: number): void {
+    this.goliathInvulnUntil = now + GOLIATH_REWARD_INVULN_MS;
+    this.goliathMinigunUntil = this.goliathInvulnUntil + GOLIATH_REWARD_MINIGUN_MS;
+    for (const p of this.players.values()) {
+      p.reloadEnd = 0;
+      p.useEnd = 0;
+      p.placing = false;
+      p.nextFire = Math.max(p.nextFire, this.goliathInvulnUntil);
+    }
+  }
+
   // ---- snapshots ----
 
-  private buildPublic(): PlayerPublic[] {
+  private buildPublic(now: number): PlayerPublic[] {
     const arr: PlayerPublic[] = [];
+    const minigunActive = this.goliathInvulnUntil <= now && this.goliathMinigunUntil > now;
     for (const p of this.players.values()) {
       arr.push({
         id: p.pid,
@@ -632,8 +660,8 @@ export class Game {
         hp: Math.round(p.hp),
         alive: p.alive ? 1 : 0,
         aim: p.aim ? 1 : 0,
-        w: p.slots[p.act]?.w ?? 0,
-        pl: p.placing ? 1 : 0,
+        w: minigunActive && p.alive ? 'minigun' : p.slots[p.act]?.w ?? 0,
+        pl: minigunActive ? 0 : p.placing ? 1 : 0,
         k: p.k,
         d: p.d,
         ping: p.ping,
@@ -667,11 +695,13 @@ export class Game {
       use: p.useEnd,
       dead: p.alive ? 0 : p.deadUntil,
       inv: p.invulnUntil,
+      gi: this.goliathInvulnUntil,
+      gm: this.goliathMinigunUntil,
     };
   }
 
   private broadcast(now: number): void {
-    const players = this.buildPublic();
+    const players = this.buildPublic(now);
     const boss = this.boss.publicState();
     const ms = this.boss.missilesPublic();
     const hasNotes = this.events.some((e) => e.t === 'note');

@@ -77,6 +77,8 @@ export const BOSS_WALK_SPEED = 3.2; // slower than a walking player
 export const BOSS_LAND_PAUSE_MS = 2000; // stands still after touchdown, then opens fire
 export const BOSS_MISSILE_INTERVAL_MS = 8000; // follow-up launches after the first
 export const BOSS_TOUCH_DMG = 9999;
+export const GOLIATH_REWARD_INVULN_MS = 10_000;
+export const GOLIATH_REWARD_MINIGUN_MS = 30_000;
 
 // --- boss missile (slow, heat-seeking, can be shot down) ---
 export const MISSILE_SPEED = 10;

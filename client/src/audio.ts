@@ -17,6 +17,7 @@ const VOICES: Record<WeaponId, ShotVoice> = {
   smg: { noiseDur: 0.06, noiseFreq: 1050, noiseGain: 0.5, thump: false }, // suppressed, still punchy
   shotgun: { noiseDur: 0.24, noiseFreq: 850, noiseGain: 1.3, thump: true },
   sniper: { noiseDur: 0.32, noiseFreq: 3000, noiseGain: 1.4, thump: true },
+  minigun: { noiseDur: 0.08, noiseFreq: 1800, noiseGain: 1.05, thump: true },
 };
 
 export class AudioMgr {
