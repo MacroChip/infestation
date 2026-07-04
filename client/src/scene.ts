@@ -254,7 +254,18 @@ export class SceneMgr {
   addLoot(item: LootItem): void {
     if (this.lootMeshes.has(item.id)) return;
     const g = this.buildLootMesh(item);
-    g.position.set(item.x, item.y + 0.28, item.z);
+    const finalY = item.y + 0.28;
+    g.position.set(item.sx ?? item.x, (item.sy ?? item.y) + 0.28, item.sz ?? item.z);
+    g.userData.finalX = item.x;
+    g.userData.finalY = finalY;
+    g.userData.finalZ = item.z;
+    if (item.sx !== undefined || item.sy !== undefined || item.sz !== undefined) {
+      g.userData.startX = g.position.x;
+      g.userData.startY = g.position.y;
+      g.userData.startZ = g.position.z;
+      g.userData.popStart = performance.now() / 1000;
+      g.userData.popDuration = 0.55;
+    }
     this.scene.add(g);
     this.lootMeshes.set(item.id, g);
   }
@@ -270,8 +281,30 @@ export class SceneMgr {
   animateLoot(t: number): void {
     for (const [id, g] of this.lootMeshes) {
       g.rotation.y = t * 0.8 + id;
-      g.position.y = g.userData.baseY ?? (g.userData.baseY = g.position.y);
-      g.position.y += Math.sin(t * 2 + id) * 0.05;
+      const finalX = g.userData.finalX ?? g.position.x;
+      const finalY = g.userData.finalY ?? g.position.y;
+      const finalZ = g.userData.finalZ ?? g.position.z;
+      const popStart = g.userData.popStart as number | undefined;
+      if (popStart !== undefined) {
+        const dur = g.userData.popDuration as number;
+        const u = Math.min(1, (performance.now() / 1000 - popStart) / dur);
+        const ease = 1 - Math.pow(1 - u, 3);
+        const startX = g.userData.startX ?? finalX;
+        const startY = g.userData.startY ?? finalY;
+        const startZ = g.userData.startZ ?? finalZ;
+        g.position.x = startX + (finalX - startX) * ease;
+        g.position.z = startZ + (finalZ - startZ) * ease;
+        g.position.y =
+          startY +
+          (finalY - startY) * ease +
+          Math.sin(u * Math.PI) * 0.9 +
+          Math.sin(t * 2 + id) * 0.05;
+        if (u >= 1) delete g.userData.popStart;
+      } else {
+        g.position.x = finalX;
+        g.position.z = finalZ;
+        g.position.y = finalY + Math.sin(t * 2 + id) * 0.05;
+      }
     }
   }
 

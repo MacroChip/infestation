@@ -473,6 +473,9 @@ export class Game {
       d.x = r2(clamp(p.move.x + Math.cos(ang) * rad, -72, 72));
       d.z = r2(clamp(p.move.z + Math.sin(ang) * rad, -72, 72));
       d.y = r2(Math.max(0, p.move.y));
+      d.sx = r2(p.move.x);
+      d.sy = r2(Math.max(0, p.move.y) + 0.9);
+      d.sz = r2(p.move.z);
       const item = this.loot.addDrop(d, now);
       this.events.push({ t: 'ladd', item });
     });
