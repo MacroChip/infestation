@@ -30,7 +30,7 @@ export const EYE_CROUCH = 1.02;
 export const MAX_INPUT_DT = 0.05;
 
 // --- stamina ---
-export const STAM_MAX = 100;
+export const STAM_MAX = 500;
 export const SPRINT_DRAIN = 22; // per second while sprint-moving
 export const JUMP_STAM_COST = 12;
 export const STAM_REGEN = 18; // per second
@@ -42,7 +42,7 @@ export const HP_MAX = 100;
 export const RESPAWN_MS = 3000;
 export const SPAWN_INVULN_MS = 1500; // broken early by firing
 export const MED_HEAL = 60;
-export const MED_USE_MS = 1600;
+export const MED_USE_MS = 1600; // instant heal cooldown duration
 export const SWAP_FIRE_LOCKOUT_MS = 350; // fire delay after a weapon swap / pickup
 export const MAX_MEDS = 3;
 export const MAX_KITS = 3; // barricade kits
@@ -55,8 +55,8 @@ export const LOOT_RESPAWN_MIN_MS = 22_000;
 export const LOOT_RESPAWN_MAX_MS = 30_000;
 
 // --- barricades ---
-export const BAR_HX = 1.25; // half extents
-export const BAR_HY = 0.7;
+export const BAR_HX = 0.525; // half extents: 1.25x player width (CAPSULE_RADIUS * 2)
+export const BAR_HY = 0.99; // half height: 1.1x standing character height
 export const BAR_HZ = 0.15;
 export const BAR_HP = 260;
 export const BAR_PLACE_RANGE = 4.2;

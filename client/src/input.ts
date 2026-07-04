@@ -41,13 +41,13 @@ export class Input {
   onScoreboard: (show: boolean) => void = () => {};
   onToggleDebug: () => void = () => {};
   onToggleMute: () => void = () => {};
+  onToggleShoulder: () => void = () => {};
 
   private keys = new Set<string>();
-  private crouchToggle = false;
   private edges = freshEdges();
 
   constructor(private canvas: HTMLCanvasElement) {
-    document.addEventListener('keydown', (e) => this.onKeyDown(e));
+    document.addEventListener('keydown', (e) => this.onKeyDown(e), { capture: true });
     document.addEventListener('keyup', (e) => this.onKeyUp(e));
     document.addEventListener('mousemove', (e) => this.onMouseMove(e));
     document.addEventListener('mousedown', (e) => this.onMouseDown(e));
@@ -85,11 +85,13 @@ export class Input {
 
   private onKeyDown(e: KeyboardEvent): void {
     if (!this.enabled) return;
-    // While the mouse is captured, swallow browser shortcuts (Ctrl/Cmd+S save
-    // page, Ctrl+D bookmark, etc.) so gameplay keys never leak to the browser.
-    // Ctrl on its own is a gameplay bind (crouch), so keep that flowing.
-    if (this.locked && (e.ctrlKey || e.metaKey) && e.code !== 'ControlLeft' && e.code !== 'ControlRight') {
+    // While the mouse is captured, swallow browser shortcuts (Ctrl/Cmd+S save,
+    // Ctrl+D bookmark, Ctrl+W close tab, etc.) so gameplay keys never leak to
+    // the browser. Ctrl is no longer a gameplay bind, so modified Ctrl/Cmd
+    // shortcuts are always suppressed while locked.
+    if (this.locked && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
+      e.stopPropagation();
     }
     if (e.code === 'Tab') {
       e.preventDefault();
@@ -111,7 +113,7 @@ export class Input {
       case 'KeyB': this.edges.placeToggle = true; break;
       case 'Digit1': this.edges.swap = 0; break;
       case 'Digit2': this.edges.swap = 1; break;
-      case 'KeyC': this.crouchToggle = !this.crouchToggle; break;
+      case 'AltLeft': this.onToggleShoulder(); e.preventDefault(); break;
       case 'KeyM': this.onToggleMute(); break;
     }
   }
@@ -167,11 +169,10 @@ export class Input {
   }
 
   crouchHeld(): boolean {
-    return this.crouchToggle || this.keys.has('ControlLeft') || this.keys.has('ControlRight');
+    return false;
   }
 
   clearCrouchToggle(): void {
-    this.crouchToggle = false;
   }
 
   consumeEdges(): InputEdges {

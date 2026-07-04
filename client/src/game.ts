@@ -8,6 +8,7 @@ import {
   INPUT_BATCH,
   INTERP_DELAY_MS,
   MED_USE_MS,
+  STAM_MAX,
   SWAP_FIRE_LOCKOUT_MS,
   WEAPON_PICKUP_RADIUS,
 } from '../../shared/constants';
@@ -82,7 +83,7 @@ export class ClientGame {
 
   myPid = 0;
   private pred: MoveState = {
-    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, onGround: true, stamina: 100, stamCd: 0,
+    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, onGround: true, stamina: STAM_MAX, stamCd: 0,
   };
   private errX = 0;
   private errY = 0;
@@ -132,6 +133,7 @@ export class ClientGame {
       this.hud.toast(m ? 'sound muted (M)' : 'sound on');
     };
     this.input.onScoreboard = (show) => (this.scoreboardOpen = show);
+    this.input.onToggleShoulder = () => this.camera.toggleShoulder();
 
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -268,7 +270,7 @@ export class ClientGame {
       pit: r3(pit),
       sp: this.input.sprintHeld() ? 1 : 0,
       jp: edges.jump ? 1 : 0,
-      cr: this.input.crouchHeld() ? 1 : 0,
+      cr: 0,
       aim: aiming ? 1 : 0,
     };
 
@@ -343,7 +345,7 @@ export class ClientGame {
     }
     const def = WEAPONS[slot.w];
     const snow = this.net.serverNow();
-    if (this.you.rld > snow || this.you.use > snow) return;
+    if (this.you.rld > snow) return;
     const wantFire = def.auto ? this.input.fireHeld : pressedEdge;
     if (!wantFire || now < this.nextShotAt) return;
 
@@ -383,6 +385,14 @@ export class ClientGame {
     this.effects.muzzleFlash(addScaled(origin, center, 0.3), slot.w);
     this.audio.shot(slot.w, 0, 0);
     this.input.kickView((Math.random() - 0.5) * def.kick * 0.5, def.kick * (0.8 + Math.random() * 0.4));
+
+    if (displayMag === 1 && (this.you.res[def.ammo] ?? 0) > 0) {
+      this.nextShotAt = Math.max(this.nextShotAt, now + def.reload * 1000);
+      if (now - this.autoReloadAt > 250) {
+        this.audio.reload();
+        this.autoReloadAt = now;
+      }
+    }
   }
 
   private fireAngles(): { yaw: number; pit: number } {
@@ -392,7 +402,7 @@ export class ClientGame {
     const target = hit ? v3(hit.x, hit.y, hit.z) : far;
     const eye = v3(
       this.pred.x,
-      this.pred.y + eyeHeight(this.input.crouchHeld()),
+      this.pred.y + eyeHeight(false),
       this.pred.z,
     );
     const d = sub(target, eye);
@@ -629,7 +639,7 @@ export class ClientGame {
       z: this.pred.z + this.errZ,
       yaw: this.input.yaw,
       pit: this.input.pit,
-      crouch: this.input.crouchHeld(),
+      crouch: false,
       aim: aiming,
       alive: !this.isDead,
       weapon: activeW,
@@ -694,7 +704,7 @@ export class ClientGame {
       gx,
       gz,
       yaw,
-      { x: this.pred.x, y: this.pred.y, z: this.pred.z, eye: eyeHeight(this.input.crouchHeld()) },
+      { x: this.pred.x, y: this.pred.y, z: this.pred.z, eye: eyeHeight(false) },
       this.statics,
       this.barCols,
       this.views.capsules(),
@@ -736,7 +746,7 @@ export class ClientGame {
 
     if (!this.you) return;
     const snow = this.net.serverNow();
-    this.hud.setVitals(this.you.hp, this.pred.stamina);
+    this.hud.setVitals(this.you.hp, (this.pred.stamina / STAM_MAX) * 100);
     this.hud.setConsumables(this.you.meds, this.you.kits);
     const reloading = this.you.rld > snow;
     const magOverride =
@@ -755,7 +765,7 @@ export class ClientGame {
 
     if (activeW !== 0 && !zoomed && !this.placing) {
       const speed = Math.hypot(this.pred.vx, this.pred.vz);
-      const spread = computeSpread(WEAPONS[activeW], aiming, this.input.crouchHeld(), speed, this.pred.onGround);
+      const spread = computeSpread(WEAPONS[activeW], aiming, false, speed, this.pred.onGround);
       this.hud.setCrosshairSpread(spread, true);
     } else {
       this.hud.setCrosshairSpread(0, !zoomed && !this.placing);
