@@ -3,16 +3,116 @@
 
 import * as THREE from 'three';
 import { MAP_BOXES } from '../../shared/map';
-import { BAR_HP, BAR_HX, BAR_HY, BAR_HZ } from '../../shared/constants';
+import { BAR_HP, BAR_HX, BAR_HY, BAR_HZ, type AmmoType } from '../../shared/constants';
 import { WEAPONS } from '../../shared/weapons';
+import { GUN_PALETTE } from './players';
 import type { BarricadeState, LootItem } from '../../shared/types';
 
-const AMMO_COLORS: Record<string, number> = {
-  rifle: 0xd98f3a,
-  smg: 0x6fa4d9,
-  shell: 0xd9543a,
-  long: 0x9a6fd9,
+// Each ammo type gets a printed icon on the crate face (bullet silhouette +
+// short label) rather than being told apart purely by box colour.
+interface AmmoIcon {
+  tint: number; // accent tint used for the drawn round
+  label: string;
+  draw: (g: CanvasRenderingContext2D, tint: string) => void;
+}
+
+// A slender pointed round, scaled/proportioned per ammo type.
+function drawRound(
+  g: CanvasRenderingContext2D,
+  tint: string,
+  w: number,
+  h: number,
+  tip: number,
+): void {
+  const cx = 128;
+  const bodyTop = 150 - h / 2 + tip;
+  const bodyBot = 150 + h / 2;
+  // brass case
+  g.fillStyle = '#c9a24a';
+  g.fillRect(cx - w / 2, bodyTop, w, bodyBot - bodyTop);
+  // rim
+  g.fillStyle = '#8f6f2e';
+  g.fillRect(cx - w / 2, bodyBot - 14, w, 14);
+  // pointed projectile tip
+  g.fillStyle = tint;
+  g.beginPath();
+  g.moveTo(cx - w / 2, bodyTop);
+  g.lineTo(cx + w / 2, bodyTop);
+  g.lineTo(cx, bodyTop - tip);
+  g.closePath();
+  g.fill();
+}
+
+const AMMO_ICONS: Record<AmmoType, AmmoIcon> = {
+  rifle: {
+    tint: 0xd98f3a,
+    label: 'RIFLE',
+    draw: (g, t) => drawRound(g, t, 54, 150, 44),
+  },
+  smg: {
+    tint: 0x6fa4d9,
+    label: 'SMG',
+    draw: (g, t) => {
+      // two stubby pistol-calibre rounds
+      g.save();
+      g.translate(-34, 0);
+      drawRound(g, t, 46, 96, 26);
+      g.translate(68, 0);
+      drawRound(g, t, 46, 96, 26);
+      g.restore();
+    },
+  },
+  shell: {
+    tint: 0xd9543a,
+    label: 'SHELLS',
+    draw: (g, t) => {
+      // wide shotgun shell: brass base + coloured hull
+      g.fillStyle = t;
+      g.fillRect(128 - 46, 90, 92, 108);
+      g.fillStyle = '#c9a24a';
+      g.fillRect(128 - 46, 168, 92, 40);
+      g.fillStyle = 'rgba(0,0,0,0.25)';
+      g.fillRect(128 - 46, 108, 92, 8);
+      g.fillRect(128 - 46, 126, 92, 8);
+    },
+  },
+  long: {
+    tint: 0x9a6fd9,
+    label: 'LONG',
+    draw: (g, t) => drawRound(g, t, 40, 176, 56),
+  },
 };
+
+function ammoIconTexture(at: AmmoType): THREE.CanvasTexture {
+  const icon = AMMO_ICONS[at];
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  // olive-drab crate face with a stencil panel for the icon
+  g.fillStyle = '#5b5a3a';
+  g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = 'rgba(0,0,0,0.35)';
+  g.lineWidth = 10;
+  g.strokeRect(5, 5, 246, 246);
+  g.fillStyle = 'rgba(20,20,16,0.6)';
+  g.fillRect(78, 18, 100, 168);
+  const tint = `#${icon.tint.toString(16).padStart(6, '0')}`;
+  g.save();
+  g.translate(0, -18);
+  icon.draw(g, tint);
+  g.restore();
+  // label bar
+  g.fillStyle = tint;
+  g.fillRect(20, 200, 216, 40);
+  g.fillStyle = '#12120e';
+  g.font = 'bold 34px monospace';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(icon.label, 128, 222);
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
+  return tex;
+}
 
 function groundTexture(): THREE.Texture {
   const c = document.createElement('canvas');
@@ -99,13 +199,14 @@ export class SceneMgr {
     const lam = (color: number) => new THREE.MeshLambertMaterial({ color });
     if (item.k === 'w' && item.w) {
       const def = WEAPONS[item.w];
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.8), lam(0x3a3a40));
+      const pal = GUN_PALETTE[item.w];
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.8), lam(pal.body));
       g.add(body);
       const barrelLen = item.w === 'sniper' ? 0.7 : item.w === 'shotgun' ? 0.45 : 0.35;
-      const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, barrelLen), lam(0x2a2a30));
+      const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, barrelLen), lam(pal.metal));
       barrel.position.set(0, 0.05, -(0.4 + barrelLen / 2));
       g.add(barrel);
-      const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), lam(0x4a3a2a));
+      const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 0.1), lam(pal.accent));
       grip.position.set(0, -0.15, 0.2);
       g.add(grip);
       const marker = new THREE.Mesh(
@@ -115,10 +216,18 @@ export class SceneMgr {
       marker.position.y = 0.55;
       g.add(marker);
     } else if (item.k === 'a' && item.at) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.24), lam(AMMO_COLORS[item.at]));
+      // Chunky ammo crate with a printed icon face for the round type.
+      const crate = lam(0x5b5a3a);
+      const iconMat = new THREE.MeshLambertMaterial({ map: ammoIconTexture(item.at) });
+      // face order: +x, -x, +y, -y, +z, -z — icon on the four upright sides
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.4, 0.5),
+        [iconMat, iconMat, crate, crate, iconMat, iconMat],
+      );
+      box.position.y = 0.06;
       g.add(box);
-      const lid = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.05, 0.26), lam(0x3a3a3a));
-      lid.position.y = 0.13;
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.07, 0.54), lam(0x40402a));
+      lid.position.y = 0.29;
       g.add(lid);
     } else if (item.k === 'm') {
       const box = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.3), lam(0xe8e4da));

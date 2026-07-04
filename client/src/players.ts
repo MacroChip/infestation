@@ -52,10 +52,26 @@ function nameSprite(name: string, color: number): THREE.Sprite {
   return s;
 }
 
+// Each weapon gets its own body colour + silhouette so you can read what an
+// enemy is holding (and what's in your own hands) at a glance.
+export interface GunPalette {
+  body: number; // receiver / dominant colour
+  metal: number; // barrel / hardware
+  accent: number; // bright detail (mag, rail, scope glass)
+}
+export const GUN_PALETTE: Record<WeaponId, GunPalette> = {
+  ar: { body: 0x2f6f4f, metal: 0x24242a, accent: 0xffd27a }, // olive workhorse
+  smg: { body: 0x2a3550, metal: 0x141822, accent: 0x9ab0e0 }, // dark navy, suppressed
+  shotgun: { body: 0x7a4a26, metal: 0x2a2a30, accent: 0xd98a3a }, // wood + brass
+  sniper: { body: 0x30302f, metal: 0x101010, accent: 0xaef2ff }, // long black rig
+};
+
 function buildGun(w: WeaponId): THREE.Group {
   const g = new THREE.Group();
-  const dark = new THREE.MeshLambertMaterial({ color: 0x33333a });
-  const darker = new THREE.MeshLambertMaterial({ color: 0x24242a });
+  const pal = GUN_PALETTE[w];
+  const body = new THREE.MeshLambertMaterial({ color: pal.body });
+  const metal = new THREE.MeshLambertMaterial({ color: pal.metal });
+  const accent = new THREE.MeshLambertMaterial({ color: pal.accent });
   const add = (geo: THREE.BoxGeometry, mat: THREE.MeshLambertMaterial, x: number, y: number, z: number) => {
     const m = new THREE.Mesh(geo, mat);
     m.position.set(x, y, z);
@@ -64,21 +80,26 @@ function buildGun(w: WeaponId): THREE.Group {
     return m;
   };
   if (w === 'ar') {
-    add(new THREE.BoxGeometry(0.09, 0.14, 0.72), dark, 0, 0, -0.28);
-    add(new THREE.BoxGeometry(0.05, 0.05, 0.3), darker, 0, 0.02, -0.75);
-    add(new THREE.BoxGeometry(0.07, 0.16, 0.1), darker, 0, -0.12, 0.02);
+    add(new THREE.BoxGeometry(0.09, 0.14, 0.72), body, 0, 0, -0.28);
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.3), metal, 0, 0.02, -0.75); // barrel
+    add(new THREE.BoxGeometry(0.07, 0.22, 0.14), accent, 0, -0.16, 0.02); // curved mag
+    add(new THREE.BoxGeometry(0.03, 0.05, 0.36), metal, 0, 0.1, -0.3); // top rail
   } else if (w === 'smg') {
-    add(new THREE.BoxGeometry(0.08, 0.12, 0.42), dark, 0, 0, -0.14);
-    add(new THREE.BoxGeometry(0.07, 0.07, 0.34), darker, 0, 0.01, -0.5); // fat suppressor
-    add(new THREE.BoxGeometry(0.06, 0.14, 0.08), darker, 0, -0.11, 0.04);
+    add(new THREE.BoxGeometry(0.08, 0.12, 0.4), body, 0, 0, -0.13);
+    add(new THREE.BoxGeometry(0.09, 0.09, 0.36), metal, 0, 0.01, -0.5); // fat suppressor
+    add(new THREE.BoxGeometry(0.06, 0.2, 0.08), accent, 0, -0.15, 0.06); // stick mag
+    add(new THREE.BoxGeometry(0.05, 0.04, 0.14), accent, 0, 0.09, -0.06); // compact optic
   } else if (w === 'shotgun') {
-    add(new THREE.BoxGeometry(0.1, 0.13, 0.6), new THREE.MeshLambertMaterial({ color: 0x5a4632 }), 0, 0, -0.2);
-    add(new THREE.BoxGeometry(0.075, 0.075, 0.5), darker, 0, 0.04, -0.62);
-    add(new THREE.BoxGeometry(0.07, 0.07, 0.3), darker, 0, -0.05, -0.5);
+    add(new THREE.BoxGeometry(0.11, 0.14, 0.62), body, 0, 0, -0.2);
+    add(new THREE.BoxGeometry(0.08, 0.08, 0.52), metal, 0, 0.05, -0.64); // barrel
+    add(new THREE.BoxGeometry(0.075, 0.075, 0.34), accent, 0, -0.06, -0.52); // pump/tube
+    add(new THREE.BoxGeometry(0.1, 0.16, 0.16), body, 0, -0.02, 0.16); // chunky stock heel
   } else {
-    add(new THREE.BoxGeometry(0.08, 0.13, 0.7), new THREE.MeshLambertMaterial({ color: 0x3d4436 }), 0, 0, -0.25);
-    add(new THREE.BoxGeometry(0.045, 0.045, 0.65), darker, 0, 0.02, -0.9);
-    add(new THREE.BoxGeometry(0.05, 0.09, 0.22), darker, 0, 0.1, -0.1); // scope
+    add(new THREE.BoxGeometry(0.08, 0.13, 0.78), body, 0, 0, -0.27);
+    add(new THREE.BoxGeometry(0.045, 0.045, 0.7), metal, 0, 0.02, -0.95); // long thin barrel
+    add(new THREE.BoxGeometry(0.06, 0.1, 0.3), metal, 0, 0.12, -0.12); // scope tube
+    add(new THREE.BoxGeometry(0.055, 0.055, 0.05), accent, 0, 0.12, 0.04); // scope glass
+    add(new THREE.BoxGeometry(0.09, 0.18, 0.12), body, 0, -0.02, 0.2); // skeleton stock
   }
   return g;
 }

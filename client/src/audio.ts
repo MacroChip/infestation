@@ -13,10 +13,10 @@ interface ShotVoice {
 }
 
 const VOICES: Record<WeaponId, ShotVoice> = {
-  ar: { noiseDur: 0.09, noiseFreq: 2600, noiseGain: 0.5, thump: false },
-  smg: { noiseDur: 0.05, noiseFreq: 950, noiseGain: 0.16, thump: false }, // suppressed
-  shotgun: { noiseDur: 0.22, noiseFreq: 850, noiseGain: 0.75, thump: true },
-  sniper: { noiseDur: 0.3, noiseFreq: 3000, noiseGain: 0.85, thump: true },
+  ar: { noiseDur: 0.1, noiseFreq: 2600, noiseGain: 0.95, thump: true },
+  smg: { noiseDur: 0.06, noiseFreq: 1050, noiseGain: 0.5, thump: false }, // suppressed, still punchy
+  shotgun: { noiseDur: 0.24, noiseFreq: 850, noiseGain: 1.3, thump: true },
+  sniper: { noiseDur: 0.32, noiseFreq: 3000, noiseGain: 1.4, thump: true },
 };
 
 export class AudioMgr {
@@ -102,7 +102,8 @@ export class AudioMgr {
     const v = VOICES[w];
     const { g, p } = this.spatial(dist, pan);
     this.burst(v.noiseFreq, v.noiseGain * g, v.noiseDur, p);
-    if (v.thump) this.tone(140, 45, 0.5 * g, 0.18, p);
+    // low-end crack: adds body/weight so shots read as loud, not just hissy
+    if (v.thump) this.tone(150, 45, 0.75 * g, 0.2, p);
   }
 
   impact(kind: string, dist: number, pan: number): void {

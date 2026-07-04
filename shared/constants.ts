@@ -43,6 +43,7 @@ export const RESPAWN_MS = 3000;
 export const SPAWN_INVULN_MS = 1500; // broken early by firing
 export const MED_HEAL = 60;
 export const MED_USE_MS = 1600;
+export const SWAP_FIRE_LOCKOUT_MS = 350; // fire delay after a weapon swap / pickup
 export const MAX_MEDS = 3;
 export const MAX_KITS = 3; // barricade kits
 
