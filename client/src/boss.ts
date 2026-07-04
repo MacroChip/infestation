@@ -6,7 +6,6 @@
 import * as THREE from 'three';
 import {
   BOSS_HEIGHT,
-  BOSS_HP,
   BOSS_PID,
   BOSS_RADIUS,
   MISSILE_HIT_RADIUS,
@@ -136,7 +135,7 @@ export class BossView {
   }
 
   get hpFrac(): number | null {
-    return this.state ? this.state.hp / BOSS_HP : null;
+    return this.state ? this.state.hp / this.state.mhp : null;
   }
 
   setFromSnap(boss: BossPublic | undefined, ms: MissilePublic[] | undefined): void {

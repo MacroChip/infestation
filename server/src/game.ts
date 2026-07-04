@@ -303,7 +303,7 @@ export class Game {
       if (!p.alive) return;
     }
     if (cmd.summon === 1) {
-      if (!this.boss.trySummon(this.events)) {
+      if (!this.boss.trySummon(this.events, this.players.size)) {
         this.events.push({ t: 'note', pid: p.pid, text: 'GOLIATH is already deployed' });
       }
     }

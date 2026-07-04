@@ -38,6 +38,7 @@ export interface BossPublic {
   z: number;
   yaw: number;
   hp: number;
+  mhp: number; // max hp after player-count difficulty scaling
   ph: 0 | 1 | 2; // 0 descending, 1 landed (pre-fire pause), 2 hunting
 }
 
