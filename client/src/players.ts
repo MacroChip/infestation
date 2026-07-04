@@ -3,7 +3,7 @@
 // readability over fidelity.
 
 import * as THREE from 'three';
-import { BAR_HX, BAR_HY, BAR_HZ, CAPSULE_RADIUS, STAND_HEIGHT } from '../../shared/constants';
+import { CAPSULE_RADIUS, STAND_HEIGHT } from '../../shared/constants';
 import type { CapsuleTarget } from '../../shared/collision';
 import type { WeaponId } from '../../shared/types';
 import { lerpAngle } from '../../shared/math';
@@ -108,14 +108,19 @@ const WEAPON_LIST: WeaponId[] = ['ar', 'smg', 'shotgun', 'sniper'];
 
 function buildHeldBarricade(): THREE.Group {
   const g = new THREE.Group();
-  const panel = new THREE.Mesh(
-    new THREE.BoxGeometry(BAR_HX * 1.35, BAR_HY * 1.1, BAR_HZ * 2),
+  const panelA = new THREE.Mesh(
+    new THREE.BoxGeometry(0.55, 0.08, 0.4),
     new THREE.MeshLambertMaterial({ color: 0xc2a05a }),
   );
-  panel.rotation.x = 0.15;
-  panel.position.set(0, -0.02, -0.22);
-  panel.castShadow = true;
-  g.add(panel);
+  const panelB = new THREE.Mesh(
+    new THREE.BoxGeometry(0.55, 0.08, 0.4),
+    new THREE.MeshLambertMaterial({ color: 0xb2905a }),
+  );
+  panelB.position.y = 0.09;
+  panelB.rotation.y = 0.25;
+  panelA.castShadow = true;
+  panelB.castShadow = true;
+  g.add(panelA, panelB);
   return g;
 }
 
