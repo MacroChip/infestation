@@ -61,13 +61,13 @@ You can also point any client at any server with a query param:
 | WASD | move |
 | Shift | sprint (drains stamina) |
 | Space | jump |
-| C / Ctrl | crouch (toggle / hold) |
 | Mouse | look, LMB fire, RMB aim over shoulder (sniper zooms) |
 | R | reload |
 | 1 / 2 / wheel | weapon slots |
 | E | pick up weapon (ammo/medkits/kits auto-pickup on walkover) |
 | Q | use medkit (1.6s channel, interrupted by firing/sprinting/jumping) |
-| B | barricade placement mode - LMB place, RMB cancel |
+| B | barricade placement mode (stows your weapon) - LMB place, RMB cancel |
+| H | hurt yourself 30hp (dev helper for testing medkits) |
 | Tab | scoreboard |
 | F3 | network debug overlay |
 | M | mute |
@@ -131,13 +131,15 @@ headshots, by design, for hitbox simplicity.
 
 ## Barricades
 
-Find barricade kits on the map (you also spawn with one). Press **B**,
-line up the green ghost, LMB to place. The server re-validates every
+Find barricade kits on the map (you also spawn with one). Press **B** to
+ready a kit - your weapon is stowed while lining up the green ghost, so
+LMB places the barricade instead of firing, and your weapon comes back
+out right after (with the usual swap delay). The server re-validates every
 placement: in range, on flat ground, not intersecting players/walls/other
 barricades, not through a wall (line-of-sight check), not within 7m of a
 spawn point. Barricades have 260hp, block movement and bullets, darken as
 they take damage, and can be destroyed (snipers do 1.6x to them). They're
-chest-high: stand to shoot over, crouch to hide fully.
+chest-high cover to shoot over or duck behind.
 
 ## Tuning
 

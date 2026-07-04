@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import {
   BAR_PLACE_DISTANCE,
   CLIENT_STEP,
+  EYE_STAND,
   INPUT_BATCH,
   INTERP_DELAY_MS,
   MED_USE_MS,
@@ -17,7 +18,7 @@ import { buildStaticColliders, type LootTable } from '../../shared/map';
 import { barricadeCollider, validatePlacement } from '../../shared/barricade';
 import type { BoxCollider } from '../../shared/collision';
 import { castSegment, groundSupportAt } from '../../shared/collision';
-import { eyeHeight, stepMove, type MoveState } from '../../shared/movement';
+import { stepMove, type MoveState } from '../../shared/movement';
 import { computeSpread, pelletDirs, WEAPONS } from '../../shared/weapons';
 import {
   addScaled,
@@ -59,7 +60,6 @@ interface RemoteSample {
   z: number;
   yaw: number;
   pit: number;
-  cr: 0 | 1;
   aim: 0 | 1;
   alive: 0 | 1;
   w: WeaponId | 0;
@@ -271,7 +271,6 @@ export class ClientGame {
       pit: r3(pit),
       sp: this.input.sprintHeld() ? 1 : 0,
       jp: edges.jump ? 1 : 0,
-      cr: 0,
       aim: aiming ? 1 : 0,
     };
 
@@ -284,6 +283,7 @@ export class ClientGame {
       }
     }
     if (edges.use) cmd.use = 1;
+    if (edges.hurt && !this.isDead) cmd.hurt = 1;
     if (edges.swap !== null) cmd.swap = edges.swap;
     else if (wheel && this.you) {
       const other = this.you.act === 0 ? 1 : 0;
@@ -314,11 +314,16 @@ export class ClientGame {
       }
     }
     if (this.placing) {
+      // weapon is stowed while readying: the place click must never fire,
+      // and the weapon is re-drawn (with a swap-style lockout) afterwards
+      cmd.pl = 1;
       if (edges.aimPressed) {
         this.placing = false;
       } else if (edges.firePressed && this.ghostValid) {
         cmd.place = { x: r3(this.ghostPos.x), z: r3(this.ghostPos.z), yaw: r3(this.ghostPos.yaw) };
         this.placing = false;
+        this.input.fireHeld = false; // don't let the held place-click keep firing an auto
+        this.nextShotAt = Math.max(this.nextShotAt, now + SWAP_FIRE_LOCKOUT_MS);
       }
     } else if (!this.isDead) {
       this.handleFire(cmd, edges.firePressed, aiming, now);
@@ -375,10 +380,10 @@ export class ClientGame {
 
     // predicted visuals: identical math to the server's authoritative spawn
     const speed = Math.hypot(this.pred.vx, this.pred.vz);
-    const spread = computeSpread(def, aiming, cmd.cr === 1, speed, this.pred.onGround);
+    const spread = computeSpread(def, aiming, speed, this.pred.onGround);
     const dirs = pelletDirs(def, angles.yaw, angles.pit, sid, spread);
     const center = dirFromYawPitch(angles.yaw, angles.pit);
-    const eye = v3(this.pred.x, this.pred.y + eyeHeight(cmd.cr === 1), this.pred.z);
+    const eye = v3(this.pred.x, this.pred.y + EYE_STAND, this.pred.z);
     const origin = addScaled(eye, center, 0.3);
     dirs.forEach((d, i) =>
       this.effects.spawnProjectile(`c${sid}:${i}`, this.myPid, slot.w, origin, d),
@@ -401,11 +406,7 @@ export class ClientGame {
     const far = addScaled(ray.origin, ray.dir, 260);
     const hit = castSegment(ray.origin, far, this.allSolids(), this.views.capsules(), this.myPid);
     const target = hit ? v3(hit.x, hit.y, hit.z) : far;
-    const eye = v3(
-      this.pred.x,
-      this.pred.y + eyeHeight(false),
-      this.pred.z,
-    );
+    const eye = v3(this.pred.x, this.pred.y + EYE_STAND, this.pred.z);
     const d = sub(target, eye);
     if (Math.hypot(d.x, d.y, d.z) < 0.6) return { yaw: this.input.yaw, pit: this.input.pit };
     const dir = norm(d);
@@ -430,7 +431,7 @@ export class ClientGame {
         t: msg.time,
         x: p.x, y: p.y, z: p.z,
         yaw: p.yaw, pit: p.pit,
-        cr: p.cr, aim: p.aim, alive: p.alive, w: p.w,
+        aim: p.aim, alive: p.alive, w: p.w,
       });
       if (buf.length > 40) buf.splice(0, buf.length - 40);
     }
@@ -633,17 +634,16 @@ export class ClientGame {
     const zoomed = aiming && activeW === 'sniper';
     this.input.sensScale = zoomed ? 0.32 : aiming ? 0.6 : 1;
 
-    // own avatar
+    // own avatar (weapon stowed while readying a barricade)
     const myPose: PlayerPose = {
       x: this.pred.x + this.errX,
       y: this.pred.y + this.errY,
       z: this.pred.z + this.errZ,
       yaw: this.input.yaw,
       pit: this.input.pit,
-      crouch: false,
       aim: aiming,
       alive: !this.isDead,
-      weapon: activeW,
+      weapon: this.placing ? 0 : activeW,
     };
     this.views.update(this.myPid, myPose, dt, false);
     this.views.setLocalVisible(this.myPid, !zoomed);
@@ -662,7 +662,6 @@ export class ClientGame {
         z: lerp(a.z, b.z, u),
         yaw: lerpAngle(a.yaw, b.yaw, u),
         pit: lerp(a.pit, b.pit, u),
-        crouch: b.cr === 1,
         aim: b.aim === 1,
         alive: b.alive === 1,
         weapon: b.w,
@@ -671,7 +670,7 @@ export class ClientGame {
     }
 
     // camera
-    const eyeY = myPose.y + eyeHeight(myPose.crouch);
+    const eyeY = myPose.y + EYE_STAND;
     this.camera.update(
       dt,
       v3(myPose.x, eyeY, myPose.z),
@@ -705,7 +704,7 @@ export class ClientGame {
       gx,
       gz,
       yaw,
-      { x: this.pred.x, y: this.pred.y, z: this.pred.z, eye: eyeHeight(false) },
+      { x: this.pred.x, y: this.pred.y, z: this.pred.z, eye: EYE_STAND },
       this.statics,
       this.barCols,
       this.views.capsules(),
@@ -766,7 +765,7 @@ export class ClientGame {
 
     if (activeW !== 0 && !zoomed && !this.placing) {
       const speed = Math.hypot(this.pred.vx, this.pred.vz);
-      const spread = computeSpread(WEAPONS[activeW], aiming, false, speed, this.pred.onGround);
+      const spread = computeSpread(WEAPONS[activeW], aiming, speed, this.pred.onGround);
       this.hud.setCrosshairSpread(spread, true);
     } else {
       this.hud.setCrosshairSpread(0, !zoomed && !this.placing);

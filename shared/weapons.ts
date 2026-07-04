@@ -129,13 +129,11 @@ const WEAPON_INDEX: Record<WeaponId, number> = { ar: 0, smg: 1, shotgun: 2, snip
 export function computeSpread(
   w: WeaponDef,
   aiming: boolean,
-  crouching: boolean,
   horizSpeed: number,
   onGround: boolean,
 ): number {
   const base = aiming ? w.spreadAim : w.spreadHip;
-  let mult = crouching ? 0.8 : 1;
-  mult *= 1 + Math.min(horizSpeed / 7.8, 1) * 1.4;
+  let mult = 1 + Math.min(horizSpeed / 7.8, 1) * 1.4;
   if (!onGround) mult *= 2.2;
   return base * mult;
 }

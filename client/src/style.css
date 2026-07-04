@@ -65,58 +65,58 @@ body {
 
 #invuln {
   position: fixed; top: 12%; left: 50%; transform: translateX(-50%);
-  color: #9fd9ff; font-size: 12px; letter-spacing: 3px; opacity: 0.85; z-index: 10;
+  color: #9fd9ff; font-size: 16px; letter-spacing: 4px; opacity: 0.85; z-index: 10;
 }
 
 /* ---------- status (bottom left) ---------- */
-#status { position: fixed; left: 20px; bottom: 20px; width: 240px; z-index: 10; }
+#status { position: fixed; left: 24px; bottom: 24px; width: 330px; z-index: 10; }
 .bar {
-  position: relative; height: 16px; background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(232, 224, 210, 0.25); margin-bottom: 6px;
+  position: relative; height: 22px; background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(232, 224, 210, 0.25); margin-bottom: 8px;
 }
-.bar.stam { height: 8px; }
+.bar.stam { height: 12px; }
 #hp-fill { height: 100%; width: 100%; background: var(--hp); transition: width 0.12s; }
 #stam-fill { height: 100%; width: 100%; background: var(--stam); transition: width 0.08s; }
 #hp-num {
-  position: absolute; right: 4px; top: 0; font-size: 11px; line-height: 16px;
+  position: absolute; right: 6px; top: 0; font-size: 15px; line-height: 22px;
   color: #fff; text-shadow: 0 1px 2px #000;
 }
-#consumables { display: flex; gap: 14px; font-size: 12px; opacity: 0.9; }
-#consumables span { background: var(--panel); padding: 3px 8px; border: 1px solid rgba(232,224,210,0.18); }
+#consumables { display: flex; gap: 16px; font-size: 16px; opacity: 0.9; }
+#consumables span { background: var(--panel); padding: 4px 10px; border: 1px solid rgba(232,224,210,0.18); }
 
 /* ---------- weapon (bottom right) ---------- */
-#weapon-box { position: fixed; right: 20px; bottom: 20px; text-align: right; z-index: 10; }
-#weapon-name { font-size: 13px; letter-spacing: 2px; color: var(--accent); }
+#weapon-box { position: fixed; right: 24px; bottom: 24px; text-align: right; z-index: 10; }
+#weapon-name { font-size: 17px; letter-spacing: 2px; color: var(--accent); }
 #weapon-name.reloading { color: #e8c84a; animation: blink 0.5s linear infinite; }
 @keyframes blink { 50% { opacity: 0.35; } }
-#ammo { font-size: 30px; margin: 2px 0; }
-#ammo #reserve { font-size: 15px; opacity: 0.7; margin-left: 6px; }
-#slots { display: flex; gap: 8px; justify-content: flex-end; font-size: 11px; }
-.slot { background: var(--panel); border: 1px solid rgba(232,224,210,0.18); padding: 3px 8px; opacity: 0.55; }
+#ammo { font-size: 42px; margin: 3px 0; }
+#ammo #reserve { font-size: 20px; opacity: 0.7; margin-left: 8px; }
+#slots { display: flex; gap: 10px; justify-content: flex-end; font-size: 15px; }
+.slot { background: var(--panel); border: 1px solid rgba(232,224,210,0.18); padding: 4px 10px; opacity: 0.55; }
 .slot.active { opacity: 1; border-color: var(--accent); color: var(--accent); }
 
 /* ---------- prompts / toasts / feed ---------- */
 #prompt {
   position: fixed; left: 50%; bottom: 26%; transform: translateX(-50%);
   background: var(--panel); border: 1px solid rgba(232,224,210,0.3);
-  padding: 6px 14px; font-size: 13px; z-index: 10;
+  padding: 8px 18px; font-size: 17px; z-index: 10;
 }
 #prompt b { color: var(--accent); }
 #place-hint {
   position: fixed; left: 50%; bottom: 21%; transform: translateX(-50%);
-  font-size: 12px; opacity: 0.85; color: #9fd9a4; z-index: 10;
+  font-size: 16px; opacity: 0.9; color: #9fd9a4; z-index: 10;
 }
 #use-bar {
   position: fixed; left: 50%; bottom: 31%; transform: translateX(-50%);
-  width: 180px; height: 10px; background: rgba(0,0,0,0.6);
+  width: 240px; height: 14px; background: rgba(0,0,0,0.6);
   border: 1px solid rgba(232,224,210,0.3); z-index: 10;
 }
 #use-fill { height: 100%; width: 0; background: #7bc95f; }
 
-#killfeed { position: fixed; right: 20px; top: 18px; text-align: right; font-size: 12px; z-index: 10; }
+#killfeed { position: fixed; right: 24px; top: 20px; text-align: right; font-size: 15px; z-index: 10; }
 #killfeed div {
   background: var(--panel); border: 1px solid rgba(232,224,210,0.12);
-  padding: 4px 10px; margin-bottom: 4px; opacity: 0.95;
+  padding: 5px 12px; margin-bottom: 5px; opacity: 0.95;
 }
 #killfeed .me { border-color: var(--accent); }
 #killfeed b { font-weight: normal; }
@@ -124,12 +124,12 @@ body {
 #toasts { position: fixed; left: 50%; top: 20%; transform: translateX(-50%); text-align: center; z-index: 10; }
 #toasts div {
   background: var(--panel); border: 1px solid rgba(232,224,210,0.25);
-  padding: 5px 14px; margin-bottom: 5px; font-size: 13px; color: #e8c84a;
+  padding: 6px 16px; margin-bottom: 6px; font-size: 17px; color: #e8c84a;
 }
 
 #hint {
-  position: fixed; left: 50%; bottom: 4px; transform: translateX(-50%);
-  font-size: 10px; opacity: 0.4; white-space: nowrap; z-index: 10;
+  position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%);
+  font-size: 14px; opacity: 0.55; white-space: nowrap; z-index: 10;
 }
 
 /* ---------- debug ---------- */
@@ -144,12 +144,12 @@ body {
 #scoreboard {
   position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   background: rgba(12, 10, 8, 0.9); border: 1px solid rgba(232,224,210,0.3);
-  padding: 18px 26px; z-index: 30; min-width: 380px;
+  padding: 22px 32px; z-index: 30; min-width: 460px;
 }
-#scoreboard h3 { font-size: 13px; letter-spacing: 3px; color: var(--accent); margin-bottom: 12px; }
-#scoreboard table { width: 100%; border-collapse: collapse; font-size: 13px; }
-#scoreboard th { text-align: left; opacity: 0.55; font-weight: normal; font-size: 11px; padding: 2px 10px 6px 0; }
-#scoreboard td { padding: 3px 10px 3px 0; }
+#scoreboard h3 { font-size: 16px; letter-spacing: 3px; color: var(--accent); margin-bottom: 14px; }
+#scoreboard table { width: 100%; border-collapse: collapse; font-size: 16px; }
+#scoreboard th { text-align: left; opacity: 0.55; font-weight: normal; font-size: 13px; padding: 2px 12px 7px 0; }
+#scoreboard td { padding: 4px 12px 4px 0; }
 #scoreboard tr.me td { color: var(--accent); }
 
 /* ---------- death screen ---------- */
@@ -158,10 +158,10 @@ body {
   background: radial-gradient(ellipse at center, rgba(40, 8, 6, 0.35), rgba(20, 6, 4, 0.75));
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-#death-screen h2 { font-size: 34px; letter-spacing: 10px; color: #d95040; }
-#death-by { margin-top: 10px; font-size: 15px; }
-#death-note { margin-top: 6px; font-size: 11px; opacity: 0.6; }
-#death-timer { margin-top: 22px; font-size: 22px; color: var(--text); }
+#death-screen h2 { font-size: 44px; letter-spacing: 12px; color: #d95040; }
+#death-by { margin-top: 12px; font-size: 19px; }
+#death-note { margin-top: 8px; font-size: 14px; opacity: 0.6; }
+#death-timer { margin-top: 26px; font-size: 28px; color: var(--text); }
 
 /* ---------- start screen ---------- */
 #start-screen {
@@ -174,7 +174,7 @@ body {
 }
 #start-screen h1 { font-size: 58px; letter-spacing: 14px; font-weight: normal; }
 #start-screen h1 span { color: var(--accent); }
-.tagline { margin: 8px 0 34px; font-size: 11px; letter-spacing: 4px; opacity: 0.6; }
+.tagline { margin: 8px 0 34px; font-size: 13px; letter-spacing: 4px; opacity: 0.6; }
 .join-row { display: flex; gap: 10px; }
 #name-input {
   background: rgba(0,0,0,0.5); border: 1px solid rgba(232,224,210,0.35);
@@ -188,10 +188,10 @@ body {
 }
 #join-btn:hover { filter: brightness(1.12); }
 #join-btn:disabled { opacity: 0.5; cursor: default; }
-#start-status { margin-top: 14px; font-size: 13px; color: #e8c84a; min-height: 18px; }
-.controls { margin-top: 38px; font-size: 12px; line-height: 2; opacity: 0.75; text-align: center; }
+#start-status { margin-top: 14px; font-size: 15px; color: #e8c84a; min-height: 20px; }
+.controls { margin-top: 38px; font-size: 16px; line-height: 2; opacity: 0.8; text-align: center; }
 .controls b { color: var(--accent); font-weight: normal; }
-.fine { margin-top: 26px; font-size: 10px; letter-spacing: 2px; opacity: 0.45; }
+.fine { margin-top: 26px; font-size: 12px; letter-spacing: 2px; opacity: 0.5; }
 
 #click-catch {
   position: fixed; inset: 0; z-index: 35; display: flex; align-items: center; justify-content: center;

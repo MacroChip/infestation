@@ -7,10 +7,6 @@ import {
   ACCEL_GROUND,
   AIM_SPEED_MULT,
   CAPSULE_RADIUS,
-  CROUCH_HEIGHT,
-  CROUCH_SPEED,
-  EYE_CROUCH,
-  EYE_STAND,
   GRAVITY,
   JUMP_STAM_COST,
   JUMP_VY,
@@ -40,15 +36,9 @@ export interface MoveState {
   stamCd: number; // regen delay remaining
 }
 
-export const capsuleHeight = (crouching: boolean): number =>
-  crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
-
-export const eyeHeight = (crouching: boolean): number => (crouching ? EYE_CROUCH : EYE_STAND);
-
 export function isSprinting(st: MoveState, cmd: InputCmd): boolean {
   return (
     cmd.sp === 1 &&
-    cmd.cr !== 1 &&
     cmd.aim !== 1 &&
     st.stamina > SPRINT_MIN_STAM &&
     (cmd.mx !== 0 || cmd.mz !== 0)
@@ -57,8 +47,7 @@ export function isSprinting(st: MoveState, cmd: InputCmd): boolean {
 
 export function stepMove(st: MoveState, cmd: InputCmd, solids: BoxCollider[]): void {
   const dt = Math.min(Math.max(cmd.dt, 0.001), MAX_INPUT_DT);
-  const crouching = cmd.cr === 1;
-  const h = capsuleHeight(crouching);
+  const h = STAND_HEIGHT;
   const r = CAPSULE_RADIUS;
 
   // clamp move intent to a unit circle
@@ -72,8 +61,8 @@ export function stepMove(st: MoveState, cmd: InputCmd, solids: BoxCollider[]): v
   const moving = ml > 0.01;
 
   const sprinting = isSprinting(st, cmd);
-  let speed = crouching ? CROUCH_SPEED : sprinting ? SPRINT_SPEED : WALK_SPEED;
-  if (cmd.aim === 1 && !crouching) speed *= AIM_SPEED_MULT;
+  let speed = sprinting ? SPRINT_SPEED : WALK_SPEED;
+  if (cmd.aim === 1) speed *= AIM_SPEED_MULT;
 
   const accel = st.onGround ? ACCEL_GROUND : ACCEL_AIR;
   const k = 1 - Math.exp(-accel * dt);
