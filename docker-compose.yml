@@ -1,0 +1,38 @@
+# Reproducible LEADFIELD deployment.
+#
+#   git pull                        # get the latest code
+#   docker compose up -d --build    # (re)build the image and (re)start detached
+#
+# The server hosts the built client AND the WebSocket game socket on one port,
+# so http://<droplet-ip>:8081 is all a player needs.
+
+services:
+  leadfield:
+    build:
+      context: .
+    image: leadfield:latest
+    container_name: leadfield
+    restart: unless-stopped
+
+    # Host:container. Change the left side to publish on a different host port,
+    # e.g. "80:8081" to serve on the default HTTP port.
+    ports:
+      - "${PORT:-8081}:8081"
+
+    environment:
+      # Port the server listens on inside the container. Keep in sync with the
+      # container side of the port mapping above if you change it.
+      PORT: 8081
+
+    # The HTTP server answers every GET with 200, so a root request is a fine
+    # liveness probe. Node 22 has global fetch, so no curl/wget needed.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8081/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
