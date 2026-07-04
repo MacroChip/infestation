@@ -8,6 +8,7 @@ import {
   INPUT_BATCH,
   INTERP_DELAY_MS,
   MED_USE_MS,
+  SWAP_FIRE_LOCKOUT_MS,
   WEAPON_PICKUP_RADIUS,
 } from '../../shared/constants';
 import { buildStaticColliders, type LootTable } from '../../shared/map';
@@ -95,6 +96,7 @@ export class ClientGame {
 
   private sid = 1;
   private nextShotAt = 0;
+  private autoReloadAt = 0; // debounces auto-reload sound on empty mag
   private shotMap = new Map<number, string>(); // server projectile id -> local visual key
 
   private placing = false;
@@ -284,6 +286,18 @@ export class ClientGame {
       const other = this.you.act === 0 ? 1 : 0;
       if (this.you.slots[other]) cmd.swap = other;
     }
+    // Match the server's post-swap fire lockout (see processCmd/tryFire). Without
+    // this the client keeps predicting shots the server rejects, so rapidly
+    // switching weapons back and forth would fire visually forever while the
+    // authoritative magazine never actually drained.
+    if (
+      cmd.swap !== undefined &&
+      this.you &&
+      cmd.swap !== this.you.act &&
+      this.you.slots[cmd.swap]
+    ) {
+      this.nextShotAt = Math.max(this.nextShotAt, now + SWAP_FIRE_LOCKOUT_MS);
+    }
     if (edges.pick && this.nearestWeaponLoot) cmd.pick = this.nearestWeaponLoot.id;
 
     // barricade placement mode
@@ -335,7 +349,17 @@ export class ClientGame {
 
     const displayMag = Math.max(0, slot.mag - this.pendingShotCount());
     if (displayMag <= 0) {
-      if (pressedEdge) this.audio.dry();
+      // Empty mag: auto-reload if there's reserve ammo so holding fire keeps
+      // shooting until you're truly out, instead of forcing a manual R press.
+      if ((this.you.res[def.ammo] ?? 0) > 0) {
+        cmd.rld = 1;
+        if (now - this.autoReloadAt > 250) {
+          this.audio.reload();
+          this.autoReloadAt = now;
+        }
+      } else if (pressedEdge) {
+        this.audio.dry();
+      }
       this.nextShotAt = now + 220;
       return;
     }

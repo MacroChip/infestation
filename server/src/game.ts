@@ -16,6 +16,7 @@ import {
   PLAYER_COLORS,
   RESPAWN_MS,
   SPAWN_INVULN_MS,
+  SWAP_FIRE_LOCKOUT_MS,
   CAPSULE_RADIUS,
   TICK_DT,
   TICK_RATE,
@@ -40,7 +41,7 @@ import type {
   YouState,
 } from '../../shared/types';
 import { Barricades } from './barricades';
-import { Loot } from './loot';
+import { Loot, type LootTaker } from './loot';
 import { Projectiles } from './projectiles';
 
 const zeroReserve = (): Record<AmmoType, number> => ({ rifle: 0, smg: 0, shell: 0, long: 0 });
@@ -280,7 +281,7 @@ export class Game {
     if (cmd.swap !== undefined && cmd.swap !== p.act && p.slots[cmd.swap]) {
       p.act = cmd.swap;
       p.reloadEnd = 0;
-      p.nextFire = Math.max(p.nextFire, now + 350);
+      p.nextFire = Math.max(p.nextFire, now + SWAP_FIRE_LOCKOUT_MS);
     }
     if (cmd.rld === 1) this.tryReload(p, now);
     if (cmd.use === 1) this.tryUseMedkit(p, now);
@@ -381,7 +382,7 @@ export class Game {
       p.reserve[at] = Math.min(p.reserve[at] + (item.res ?? 0), AMMO_CAP[at]);
       p.act = idx;
       p.reloadEnd = 0;
-      p.nextFire = Math.max(p.nextFire, now + 350);
+      p.nextFire = Math.max(p.nextFire, now + SWAP_FIRE_LOCKOUT_MS);
       this.loot.remove(item.id);
       this.events.push({ t: 'lgone', id: item.id, taker: p.pid });
     } else {
@@ -473,7 +474,11 @@ export class Game {
     p.kits = 0;
   }
 
-  private asTaker(p: SPlayer) {
+  // The taker proxies meds/kits back onto the real player. reserve is already
+  // an object shared by reference, but meds/kits are primitives - without the
+  // accessors below, applyConsumable would mutate a throwaway copy and picked-up
+  // medkits / barricade kits would silently vanish.
+  private asTaker(p: SPlayer): LootTaker {
     return {
       pid: p.pid,
       alive: p.alive,
@@ -481,8 +486,18 @@ export class Game {
       y: p.move.y,
       z: p.move.z,
       reserve: p.reserve,
-      meds: p.meds,
-      kits: p.kits,
+      get meds() {
+        return p.meds;
+      },
+      set meds(v: number) {
+        p.meds = v;
+      },
+      get kits() {
+        return p.kits;
+      },
+      set kits(v: number) {
+        p.kits = v;
+      },
     };
   }
 

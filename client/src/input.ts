@@ -85,6 +85,12 @@ export class Input {
 
   private onKeyDown(e: KeyboardEvent): void {
     if (!this.enabled) return;
+    // While the mouse is captured, swallow browser shortcuts (Ctrl/Cmd+S save
+    // page, Ctrl+D bookmark, etc.) so gameplay keys never leak to the browser.
+    // Ctrl on its own is a gameplay bind (crouch), so keep that flowing.
+    if (this.locked && (e.ctrlKey || e.metaKey) && e.code !== 'ControlLeft' && e.code !== 'ControlRight') {
+      e.preventDefault();
+    }
     if (e.code === 'Tab') {
       e.preventDefault();
       this.onScoreboard(true);
