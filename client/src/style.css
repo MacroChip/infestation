@@ -64,9 +64,12 @@ body {
 }
 
 #invuln {
-  position: fixed; top: 12%; left: 50%; transform: translateX(-50%);
-  color: #9fd9ff; font-size: 16px; letter-spacing: 4px; opacity: 0.85; z-index: 10;
+  position: fixed; top: 11%; left: 50%; transform: translateX(-50%);
+  color: #9fd9ff; font-size: 28px; letter-spacing: 6px; opacity: 0.96; z-index: 10;
+  text-shadow: 0 0 8px rgba(159, 217, 255, 0.9), 0 2px 4px #000;
+  animation: invuln-pulse 0.9s ease-in-out infinite alternate;
 }
+@keyframes invuln-pulse { from { scale: 1; } to { scale: 1.08; } }
 
 /* ---------- boss (top center) ---------- */
 #boss-bar {

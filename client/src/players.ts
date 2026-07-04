@@ -23,6 +23,7 @@ interface View {
   root: THREE.Group;
   body: THREE.Mesh;
   visor: THREE.Mesh;
+  spawnGlow: THREE.Mesh;
   gunRoot: THREE.Group;
   guns: Record<WeaponId, THREE.Group>;
   barricade: THREE.Group;
@@ -142,6 +143,20 @@ export class PlayerViews {
     body.castShadow = true;
     root.add(body);
 
+    const spawnGlow = new THREE.Mesh(
+      new THREE.CapsuleGeometry(CAPSULE_RADIUS * 1.18, bodyH + 0.08, 4, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0x9fd9ff,
+        transparent: true,
+        opacity: 0.34,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    spawnGlow.position.y = STAND_HEIGHT / 2;
+    spawnGlow.visible = false;
+    root.add(spawnGlow);
+
     const visor = new THREE.Mesh(
       new THREE.BoxGeometry(0.34, 0.12, 0.16),
       new THREE.MeshLambertMaterial({ color: 0x1a1a20 }),
@@ -164,7 +179,7 @@ export class PlayerViews {
     barricade.visible = false;
     gunRoot.add(barricade);
 
-    const view: View = { root, body, visor, gunRoot, guns, barricade, deathT: -1, lastPose: null, smoothYaw: 0 };
+    const view: View = { root, body, visor, spawnGlow, gunRoot, guns, barricade, deathT: -1, lastPose: null, smoothYaw: 0 };
     if (!isLocal) {
       const s = nameSprite(name, color);
       s.position.y = STAND_HEIGHT + 0.45;
@@ -186,6 +201,11 @@ export class PlayerViews {
   setLocalVisible(pid: number, visible: boolean): void {
     const v = this.views.get(pid);
     if (v) v.root.visible = visible;
+  }
+
+  setSpawnProtected(pid: number, on: boolean): void {
+    const v = this.views.get(pid);
+    if (v) v.spawnGlow.visible = on;
   }
 
   update(pid: number, pose: PlayerPose, dt: number, smoothTurn: boolean): void {
@@ -215,6 +235,10 @@ export class PlayerViews {
       v.smoothYaw = pose.yaw;
     }
     v.root.rotation.y = v.smoothYaw;
+    if (v.spawnGlow.visible) {
+      const pulse = 1 + Math.sin(performance.now() * 0.008) * 0.06;
+      v.spawnGlow.scale.set(pulse, pulse, pulse);
+    }
 
     v.gunRoot.rotation.x = pose.pit;
 

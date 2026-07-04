@@ -287,6 +287,11 @@ export class Game {
       p.act = cmd.swap;
       p.reloadEnd = 0;
       p.nextFire = Math.max(p.nextFire, now + SWAP_FIRE_LOCKOUT_MS);
+      const slot = p.slots[p.act];
+      if (slot) {
+        const def = WEAPONS[slot.w];
+        if (slot.mag <= 0 && p.reserve[def.ammo] > 0) this.tryReload(p, now);
+      }
     }
     if (cmd.rld === 1) this.tryReload(p, now);
     if (cmd.use === 1) this.tryUseMedkit(p, now);
