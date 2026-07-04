@@ -54,9 +54,10 @@ export class Hud {
     this.stamFill.style.width = `${stam}%`;
   }
 
+  // key labels mirror the weapon slots' "1 <name>" style
   setConsumables(meds: number, kits: number): void {
-    this.meds.textContent = `MED ${meds}`;
-    this.kits.textContent = `BAR ${kits}`;
+    this.meds.textContent = `Q MED ${meds}`;
+    this.kits.textContent = `B BAR ${kits}`;
   }
 
   setWeapon(slots: [SlotState | null, SlotState | null], act: 0 | 1, reserveAmmo: number, magOverride: number | null, reloading: boolean): void {

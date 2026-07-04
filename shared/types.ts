@@ -37,9 +37,8 @@ export interface PlayerPublic {
   pit: number;
   hp: number;
   alive: 0 | 1;
-  cr: 0 | 1; // crouching
   aim: 0 | 1;
-  w: WeaponId | 0; // 0 = unarmed
+  w: WeaponId | 0; // 0 = unarmed (or weapon stowed while readying a barricade)
   k: number;
   d: number;
   ping: number;
@@ -89,14 +88,15 @@ export interface InputCmd {
   pit: number;
   sp: 0 | 1; // sprint held
   jp: 0 | 1; // jump pressed this step
-  cr: 0 | 1; // crouch held
   aim: 0 | 1;
+  pl?: 0 | 1; // readying a barricade (weapon stowed, firing disabled)
   fire?: FireCmd[];
   rld?: 1;
   swap?: 0 | 1; // switch to slot index
   use?: 1; // start medkit
   pick?: number; // loot item id (press-E pickup)
   place?: { x: number; z: number; yaw: number };
+  hurt?: 1; // dev helper: damage yourself to test healing
 }
 
 export type ImpactKind = 'w' | 'b' | 'p' | 'g' | 'e'; // wall/barricade/player/ground/end-of-range

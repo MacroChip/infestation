@@ -49,7 +49,6 @@ class Bot {
   private loot = new Map<number, LootItem>();
   private wp = { x: 0, z: 0 };
   private wpUntil = 0;
-  private crouch = false;
   private burstLeft = 0;
   private nextFireAt = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -112,7 +111,6 @@ class Bot {
 
     if (now > this.wpUntil || Math.hypot(this.wp.x - me.x, this.wp.z - me.z) < 4) {
       this.pickWaypoint();
-      this.crouch = Math.random() < 0.12;
     }
 
     // steer toward waypoint
@@ -130,9 +128,8 @@ class Bot {
       mz,
       yaw,
       pit: 0,
-      sp: Math.random() < 0.55 && !this.crouch ? 1 : 0,
+      sp: Math.random() < 0.55 ? 1 : 0,
       jp: Math.random() < 0.012 ? 1 : 0,
-      cr: this.crouch ? 1 : 0,
       aim: 0,
     };
 

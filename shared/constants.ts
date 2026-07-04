@@ -1,7 +1,7 @@
 // Tuning constants shared by client prediction and server authority.
 // Keep client + server in lockstep: changing these requires restarting both.
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const MAX_PLAYERS = 16;
 
 // --- timing ---
@@ -15,7 +15,6 @@ export const PING_INTERVAL_MS = 2000;
 // --- movement ---
 export const WALK_SPEED = 5.2;
 export const SPRINT_SPEED = 7.8;
-export const CROUCH_SPEED = 2.9;
 export const AIM_SPEED_MULT = 0.55;
 export const ACCEL_GROUND = 12; // exponential approach rate
 export const ACCEL_AIR = 3.5;
@@ -24,9 +23,7 @@ export const JUMP_VY = 7.4;
 export const STEP_UP = 0.35; // auto-step height onto low geometry
 export const CAPSULE_RADIUS = 0.42;
 export const STAND_HEIGHT = 1.8;
-export const CROUCH_HEIGHT = 1.25;
 export const EYE_STAND = 1.62;
-export const EYE_CROUCH = 1.02;
 export const MAX_INPUT_DT = 0.05;
 
 // --- stamina ---
@@ -46,6 +43,7 @@ export const MED_USE_MS = 1600; // instant heal cooldown duration
 export const SWAP_FIRE_LOCKOUT_MS = 350; // fire delay after a weapon swap / pickup
 export const MAX_MEDS = 3;
 export const MAX_KITS = 3; // barricade kits
+export const DEV_HURT_DMG = 30; // self-damage per press of the dev hurt key (H)
 
 // --- loot ---
 export const PICKUP_RADIUS = 1.2; // auto pickup (ammo/med/kit)

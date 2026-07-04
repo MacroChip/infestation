@@ -8,6 +8,8 @@ import {
   AMMO_TYPES,
   BAR_MAX_COUNT,
   BAR_PLACE_COOLDOWN_MS,
+  DEV_HURT_DMG,
+  EYE_STAND,
   HP_MAX,
   MAX_INPUT_DT,
   MAX_PLAYERS,
@@ -17,6 +19,7 @@ import {
   RESPAWN_MS,
   SPAWN_INVULN_MS,
   STAM_MAX,
+  STAND_HEIGHT,
   SWAP_FIRE_LOCKOUT_MS,
   CAPSULE_RADIUS,
   TICK_DT,
@@ -25,7 +28,7 @@ import {
   type AmmoType,
 } from '../../shared/constants';
 import { buildStaticColliders, SPAWN_POINTS } from '../../shared/map';
-import { capsuleHeight, eyeHeight, stepMove, type MoveState } from '../../shared/movement';
+import { stepMove, type MoveState } from '../../shared/movement';
 import { computeSpread, pelletDirs, WEAPONS } from '../../shared/weapons';
 import { validatePlacement } from '../../shared/barricade';
 import type { BoxCollider, CapsuleTarget, CastHit } from '../../shared/collision';
@@ -55,7 +58,7 @@ interface SPlayer {
   move: MoveState;
   yaw: number;
   pit: number;
-  crouch: boolean;
+  placing: boolean; // readying a barricade: weapon stowed, firing disabled
   aim: boolean;
   hp: number;
   alive: boolean;
@@ -124,7 +127,7 @@ export class Game {
         y: p.move.y,
         z: p.move.z,
         r: CAPSULE_RADIUS,
-        h: capsuleHeight(p.crouch),
+        h: STAND_HEIGHT,
       });
     }
     return out;
@@ -143,7 +146,7 @@ export class Game {
       move: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, onGround: true, stamina: STAM_MAX, stamCd: 0 },
       yaw: 0,
       pit: 0,
-      crouch: false,
+      placing: false,
       aim: false,
       hp: HP_MAX,
       alive: false,
@@ -234,6 +237,7 @@ export class Game {
     p.reloadEnd = 0;
     p.useEnd = 0;
     p.nextFire = 0;
+    p.placing = false;
     p.inputQ = [];
     this.events.push({ t: 'spawn', pid: p.pid, x: r2(best.x), y: 0, z: r2(best.z) });
   }
@@ -252,14 +256,15 @@ export class Game {
       pit: n(cmd.pit, -1.5, 1.5),
       sp: cmd.sp === 1 ? 1 : 0,
       jp: cmd.jp === 1 ? 1 : 0,
-      cr: 0,
       aim: cmd.aim === 1 ? 1 : 0,
+      pl: cmd.pl === 1 ? 1 : 0,
       fire: Array.isArray(cmd.fire) ? cmd.fire.slice(0, 4) : undefined,
       rld: cmd.rld,
       swap: cmd.swap === 0 || cmd.swap === 1 ? cmd.swap : undefined,
       use: cmd.use,
       pick: typeof cmd.pick === 'number' ? cmd.pick : undefined,
       place: cmd.place,
+      hurt: cmd.hurt === 1 ? 1 : undefined,
     };
   }
 
@@ -271,7 +276,7 @@ export class Game {
 
     p.yaw = cmd.yaw;
     p.pit = cmd.pit;
-    p.crouch = false;
+    p.placing = cmd.pl === 1;
     p.aim = cmd.aim === 1;
 
     if (cmd.swap !== undefined && cmd.swap !== p.act && p.slots[cmd.swap]) {
@@ -283,10 +288,15 @@ export class Game {
     if (cmd.use === 1) this.tryUseMedkit(p, now);
     if (cmd.pick !== undefined) this.tryPickup(p, cmd.pick, now);
     if (cmd.place) this.tryPlace(p, cmd.place, now);
+    if (cmd.hurt === 1) {
+      p.invulnUntil = 0; // dev helper must work right after spawning
+      this.damagePlayer(p.pid, DEV_HURT_DMG, p.pid, 0, now);
+      if (!p.alive) return;
+    }
 
     stepMove(p.move, cmd, this.solids());
 
-    if (cmd.fire) {
+    if (cmd.fire && !p.placing) {
       for (const fc of cmd.fire) this.tryFire(p, fc, now);
     }
   }
@@ -323,10 +333,10 @@ export class Game {
 
     const pit = clamp(fc.pit, -1.5, 1.5);
     const speed = Math.hypot(p.move.vx, p.move.vz);
-    const spread = computeSpread(def, p.aim, p.crouch, speed, p.move.onGround);
+    const spread = computeSpread(def, p.aim, speed, p.move.onGround);
     const dirs = pelletDirs(def, fc.yaw, pit, fc.sid, spread);
     const center = dirFromYawPitch(fc.yaw, pit);
-    const eye = v3(p.move.x, p.move.y + eyeHeight(p.crouch), p.move.z);
+    const eye = v3(p.move.x, p.move.y + EYE_STAND, p.move.z);
     const origin = addScaled(eye, center, 0.3);
 
     const ids: number[] = [];
@@ -406,7 +416,7 @@ export class Game {
       place.x,
       place.z,
       place.yaw,
-      { x: p.move.x, y: p.move.y, z: p.move.z, eye: eyeHeight(p.crouch) },
+      { x: p.move.x, y: p.move.y, z: p.move.z, eye: EYE_STAND },
       this.statics,
       this.bars.colliders(),
       this.capsules(false, now),
@@ -416,6 +426,8 @@ export class Game {
 
     p.kits -= 1;
     p.lastPlaceAt = now;
+    // re-drawing the stowed weapon takes as long as a weapon swap
+    p.nextFire = Math.max(p.nextFire, now + SWAP_FIRE_LOCKOUT_MS);
     const bar = this.bars.add(r2(place.x), r2(res.y), r2(place.z), r3(place.yaw));
     this.events.push({ t: 'badd', bar });
   }
@@ -582,9 +594,8 @@ export class Game {
         pit: r3(p.pit),
         hp: Math.round(p.hp),
         alive: p.alive ? 1 : 0,
-        cr: p.crouch ? 1 : 0,
         aim: p.aim ? 1 : 0,
-        w: p.slots[p.act]?.w ?? 0,
+        w: p.placing ? 0 : (p.slots[p.act]?.w ?? 0),
         k: p.k,
         d: p.d,
         ping: p.ping,

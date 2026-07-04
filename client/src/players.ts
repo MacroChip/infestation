@@ -1,9 +1,9 @@
 // Player avatars: capsule body + visor + weapon block, name sprite,
-// crouch pose and a simple topple-fade death animation. Low-poly by
-// design - readability over fidelity.
+// and a simple topple-fade death animation. Low-poly by design -
+// readability over fidelity.
 
 import * as THREE from 'three';
-import { CAPSULE_RADIUS, CROUCH_HEIGHT, STAND_HEIGHT } from '../../shared/constants';
+import { CAPSULE_RADIUS, STAND_HEIGHT } from '../../shared/constants';
 import type { CapsuleTarget } from '../../shared/collision';
 import type { WeaponId } from '../../shared/types';
 import { lerpAngle } from '../../shared/math';
@@ -14,7 +14,6 @@ export interface PlayerPose {
   z: number;
   yaw: number;
   pit: number;
-  crouch: boolean;
   aim: boolean;
   alive: boolean;
   weapon: WeaponId | 0;
@@ -194,12 +193,6 @@ export class PlayerViews {
     }
     v.root.rotation.y = v.smoothYaw;
 
-    const crouchScale = pose.crouch ? CROUCH_HEIGHT / STAND_HEIGHT : 1;
-    v.body.scale.y += (crouchScale - v.body.scale.y) * (1 - Math.exp(-14 * dt));
-    v.body.position.y = (STAND_HEIGHT * v.body.scale.y) / 2;
-    const headY = STAND_HEIGHT * v.body.scale.y - 0.28;
-    v.visor.position.y = headY;
-    v.gunRoot.position.y = headY - 0.34;
     v.gunRoot.rotation.x = pose.pit;
 
     for (const w of WEAPON_LIST) v.guns[w].visible = pose.weapon === w;
@@ -223,7 +216,7 @@ export class PlayerViews {
         y: p.y,
         z: p.z,
         r: CAPSULE_RADIUS,
-        h: p.crouch ? CROUCH_HEIGHT : STAND_HEIGHT,
+        h: STAND_HEIGHT,
       });
     }
     return out;

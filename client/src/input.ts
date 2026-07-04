@@ -15,6 +15,7 @@ export interface InputEdges {
   placeToggle: boolean;
   firePressed: boolean;
   aimPressed: boolean;
+  hurt: boolean; // dev helper: self-damage to test meds
 }
 
 const freshEdges = (): InputEdges => ({
@@ -26,6 +27,7 @@ const freshEdges = (): InputEdges => ({
   placeToggle: false,
   firePressed: false,
   aimPressed: false,
+  hurt: false,
 });
 
 export class Input {
@@ -111,6 +113,7 @@ export class Input {
       case 'KeyQ': this.edges.use = true; break;
       case 'KeyE': this.edges.pick = true; break;
       case 'KeyB': this.edges.placeToggle = true; break;
+      case 'KeyH': this.edges.hurt = true; break;
       case 'Digit1': this.edges.swap = 0; break;
       case 'Digit2': this.edges.swap = 1; break;
       case 'AltLeft': this.onToggleShoulder(); e.preventDefault(); break;
@@ -166,13 +169,6 @@ export class Input {
 
   sprintHeld(): boolean {
     return this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
-  }
-
-  crouchHeld(): boolean {
-    return false;
-  }
-
-  clearCrouchToggle(): void {
   }
 
   consumeEdges(): InputEdges {
