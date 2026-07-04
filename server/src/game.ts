@@ -8,6 +8,7 @@ import {
   AMMO_TYPES,
   BAR_MAX_COUNT,
   BAR_PLACE_COOLDOWN_MS,
+  BOSS_PID,
   DEV_HURT_DMG,
   EYE_STAND,
   HP_MAX,
@@ -45,6 +46,7 @@ import type {
   YouState,
 } from '../../shared/types';
 import { Barricades } from './barricades';
+import { Boss, type BossTarget } from './boss';
 import { Loot, type LootTaker } from './loot';
 import { Projectiles } from './projectiles';
 
@@ -86,6 +88,7 @@ export class Game {
   private bars = new Barricades();
   private loot = new Loot(this.statics);
   private projs = new Projectiles();
+  private boss = new Boss();
   private events: GameEvent[] = [];
   private nextPid = 1;
   private tick = 0;
@@ -265,6 +268,7 @@ export class Game {
       pick: typeof cmd.pick === 'number' ? cmd.pick : undefined,
       place: cmd.place,
       hurt: cmd.hurt === 1 ? 1 : undefined,
+      summon: cmd.summon === 1 ? 1 : undefined,
     };
   }
 
@@ -292,6 +296,11 @@ export class Game {
       p.invulnUntil = 0; // dev helper must work right after spawning
       this.damagePlayer(p.pid, DEV_HURT_DMG, p.pid, 0, now);
       if (!p.alive) return;
+    }
+    if (cmd.summon === 1) {
+      if (!this.boss.trySummon(this.events)) {
+        this.events.push({ t: 'note', pid: p.pid, text: 'GOLIATH is already deployed' });
+      }
     }
 
     stepMove(p.move, cmd, this.solids());
@@ -545,11 +554,29 @@ export class Game {
       if (!p.alive && p.deadUntil > 0 && now >= p.deadUntil) this.respawn(p, now);
     }
 
-    // authoritative projectiles
+    // boss + its missiles (before projectiles so bullets see fresh capsules)
     const solids = this.solids();
-    const capsules = this.capsules(true, now);
+    const bossTargets: BossTarget[] = [...this.players.values()].map((q) => ({
+      pid: q.pid,
+      alive: q.alive,
+      x: q.move.x,
+      y: q.move.y,
+      z: q.move.z,
+    }));
+    const bossDamage = (pid: number, dmg: number): void =>
+      this.damagePlayer(pid, dmg, BOSS_PID, 0, now);
+    this.boss.step(TICK_DT, now, solids, bossTargets, this.events, bossDamage);
+
+    // authoritative projectiles
+    const capsules = [...this.capsules(true, now), ...this.boss.bulletTargets()];
     this.projs.step(TICK_DT, solids, capsules, {
       onPlayerHit: (proj: ProjectileState, pid: number, hit: CastHit) => {
+        if (pid < 0) {
+          // reserved pids: boss body or a missile - metal, not flesh
+          this.pushImpact(proj, hit, 'w');
+          this.boss.onBulletHit(pid, WEAPONS[proj.w].dmg, bossTargets, this.events, bossDamage);
+          return;
+        }
         this.pushImpact(proj, hit, 'p');
         this.damagePlayer(pid, WEAPONS[proj.w].dmg, proj.owner, proj.w, now);
       },
@@ -638,6 +665,8 @@ export class Game {
 
   private broadcast(now: number): void {
     const players = this.buildPublic();
+    const boss = this.boss.publicState();
+    const ms = this.boss.missilesPublic();
     const hasNotes = this.events.some((e) => e.t === 'note');
     const publicEvents = hasNotes ? this.events.filter((e) => e.t !== 'note') : this.events;
     for (const p of this.players.values()) {
@@ -652,6 +681,8 @@ export class Game {
         tps: Math.round(this.tps * 10) / 10,
         players,
         you: this.buildYou(p),
+        boss,
+        ms: ms.length > 0 ? ms : undefined,
         ev: ev.length > 0 ? ev : undefined,
       };
       this.sendTo(p, msg);

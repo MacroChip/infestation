@@ -16,6 +16,7 @@ export interface InputEdges {
   firePressed: boolean;
   aimPressed: boolean;
   hurt: boolean; // dev helper: self-damage to test meds
+  summon: boolean; // secret combo completed
 }
 
 const freshEdges = (): InputEdges => ({
@@ -28,7 +29,15 @@ const freshEdges = (): InputEdges => ({
   firePressed: false,
   aimPressed: false,
   hurt: false,
+  summon: false,
 });
+
+// The secret: up up down down left right left right (arrow keys, so it
+// never collides with gameplay binds). Deliberately undocumented in the HUD.
+const SECRET_COMBO = [
+  'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+  'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+];
 
 export class Input {
   yaw = 0;
@@ -47,6 +56,7 @@ export class Input {
 
   private keys = new Set<string>();
   private edges = freshEdges();
+  private comboBuf: string[] = [];
 
   constructor(private canvas: HTMLCanvasElement) {
     document.addEventListener('keydown', (e) => this.onKeyDown(e), { capture: true });
@@ -107,6 +117,19 @@ export class Input {
     }
     if (e.repeat) return;
     this.keys.add(e.code);
+    if (e.code.startsWith('Arrow')) {
+      e.preventDefault();
+      this.comboBuf.push(e.code);
+      if (this.comboBuf.length > SECRET_COMBO.length) this.comboBuf.shift();
+      if (
+        this.comboBuf.length === SECRET_COMBO.length &&
+        this.comboBuf.every((c, i) => c === SECRET_COMBO[i])
+      ) {
+        this.edges.summon = true;
+        this.comboBuf = [];
+      }
+      return;
+    }
     switch (e.code) {
       case 'Space': this.edges.jump = true; e.preventDefault(); break;
       case 'KeyR': this.edges.reload = true; break;

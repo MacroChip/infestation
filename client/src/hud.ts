@@ -1,5 +1,6 @@
 // DOM-based HUD. Cheap, crisp, and easy to restyle.
 
+import { BOSS_PID } from '../../shared/constants';
 import { WEAPONS } from '../../shared/weapons';
 import type { SlotState, WeaponId } from '../../shared/types';
 
@@ -34,6 +35,9 @@ export class Hud {
   private hitmark = $('hitmarker');
   private vignette = $('vignette');
   private invuln = $('invuln');
+  private bossBar = $('boss-bar');
+  private bossLabel = $('boss-label');
+  private bossFill = $('boss-fill');
   private scoreboard = $('scoreboard');
   private scoreRows = $('score-rows');
   private deathScreen = $('death-screen');
@@ -122,6 +126,14 @@ export class Hud {
     this.invuln.classList.toggle('hidden', !on);
   }
 
+  // frac null = no boss; descending shows an INBOUND label instead of hp drain
+  setBoss(frac: number | null, descending: boolean): void {
+    this.bossBar.classList.toggle('hidden', frac === null);
+    if (frac === null) return;
+    this.bossLabel.textContent = descending ? 'GOLIATH · INBOUND' : 'GOLIATH';
+    this.bossFill.style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+  }
+
   hitmarker(): void {
     this.hitmark.classList.remove('pop');
     void this.hitmark.offsetWidth; // restart CSS animation
@@ -191,10 +203,12 @@ export class Roster {
   }
 
   name(pid: number): string {
+    if (pid === BOSS_PID) return 'GOLIATH';
     return this.names.get(pid)?.name ?? `#${pid}`;
   }
 
   colored(pid: number): string {
+    if (pid === BOSS_PID) return '<b style="color:#ff5b4a">GOLIATH</b>';
     const e = this.names.get(pid);
     if (!e) return `#${pid}`;
     return `<b style="color:#${e.color.toString(16).padStart(6, '0')}">${e.name}</b>`;

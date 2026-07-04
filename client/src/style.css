@@ -68,6 +68,24 @@ body {
   color: #9fd9ff; font-size: 16px; letter-spacing: 4px; opacity: 0.85; z-index: 10;
 }
 
+/* ---------- boss (top center) ---------- */
+#boss-bar {
+  position: fixed; top: 6%; left: 50%; transform: translateX(-50%);
+  width: min(46vw, 540px); text-align: center; z-index: 10;
+}
+#boss-label {
+  color: #ff5b4a; font-size: 15px; letter-spacing: 6px;
+  text-shadow: 0 1px 3px #000; margin-bottom: 4px;
+}
+#boss-bar .track {
+  height: 10px; background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 91, 74, 0.55);
+}
+#boss-fill {
+  height: 100%; width: 100%; transition: width 0.15s;
+  background: linear-gradient(90deg, #ff5b4a, #c92a1a);
+}
+
 /* ---------- status (bottom left) ---------- */
 #status { position: fixed; left: 24px; bottom: 24px; width: 330px; z-index: 10; }
 .bar {
