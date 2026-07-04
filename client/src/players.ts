@@ -3,7 +3,7 @@
 // readability over fidelity.
 
 import * as THREE from 'three';
-import { CAPSULE_RADIUS, STAND_HEIGHT } from '../../shared/constants';
+import { BAR_HX, BAR_HY, BAR_HZ, CAPSULE_RADIUS, STAND_HEIGHT } from '../../shared/constants';
 import type { CapsuleTarget } from '../../shared/collision';
 import type { WeaponId } from '../../shared/types';
 import { lerpAngle } from '../../shared/math';
@@ -16,7 +16,7 @@ export interface PlayerPose {
   pit: number;
   aim: boolean;
   alive: boolean;
-  weapon: WeaponId | 0;
+  weapon: WeaponId | 'bar' | 0;
 }
 
 interface View {
@@ -25,6 +25,7 @@ interface View {
   visor: THREE.Mesh;
   gunRoot: THREE.Group;
   guns: Record<WeaponId, THREE.Group>;
+  barricade: THREE.Group;
   name?: THREE.Sprite;
   deathT: number; // -1 = alive
   lastPose: PlayerPose | null;
@@ -105,6 +106,19 @@ function buildGun(w: WeaponId): THREE.Group {
 
 const WEAPON_LIST: WeaponId[] = ['ar', 'smg', 'shotgun', 'sniper'];
 
+function buildHeldBarricade(): THREE.Group {
+  const g = new THREE.Group();
+  const panel = new THREE.Mesh(
+    new THREE.BoxGeometry(BAR_HX * 1.35, BAR_HY * 1.1, BAR_HZ * 2),
+    new THREE.MeshLambertMaterial({ color: 0xc2a05a }),
+  );
+  panel.rotation.x = 0.15;
+  panel.position.set(0, -0.02, -0.22);
+  panel.castShadow = true;
+  g.add(panel);
+  return g;
+}
+
 export class PlayerViews {
   private views = new Map<number, View>();
 
@@ -141,7 +155,11 @@ export class PlayerViews {
       guns[w] = gun;
     }
 
-    const view: View = { root, body, visor, gunRoot, guns, deathT: -1, lastPose: null, smoothYaw: 0 };
+    const barricade = buildHeldBarricade();
+    barricade.visible = false;
+    gunRoot.add(barricade);
+
+    const view: View = { root, body, visor, gunRoot, guns, barricade, deathT: -1, lastPose: null, smoothYaw: 0 };
     if (!isLocal) {
       const s = nameSprite(name, color);
       s.position.y = STAND_HEIGHT + 0.45;
@@ -196,6 +214,7 @@ export class PlayerViews {
     v.gunRoot.rotation.x = pose.pit;
 
     for (const w of WEAPON_LIST) v.guns[w].visible = pose.weapon === w;
+    v.barricade.visible = pose.weapon === 'bar';
   }
 
   muzzleWorld(pid: number, out: THREE.Vector3): boolean {

@@ -81,10 +81,6 @@ body {
   position: absolute; right: 6px; top: 0; font-size: 15px; line-height: 22px;
   color: #fff; text-shadow: 0 1px 2px #000;
 }
-#consumables { display: flex; gap: 16px; font-size: 16px; opacity: 0.9; }
-#consumables span {
-  background: var(--panel); padding: 4px 10px; border: 1px solid rgba(232,224,210,0.18);
-}
 #meds.using {
   color: #fff; border-color: rgba(123,201,95,0.75);
   background: linear-gradient(to right, rgba(123,201,95,0.45) var(--med-use, 0%), var(--panel) var(--med-use, 0%));
@@ -97,9 +93,10 @@ body {
 @keyframes blink { 50% { opacity: 0.35; } }
 #ammo { font-size: 42px; margin: 3px 0; }
 #ammo #reserve { font-size: 20px; opacity: 0.7; margin-left: 8px; }
-#slots { display: flex; gap: 10px; justify-content: flex-end; font-size: 15px; }
+#slots { display: flex; gap: 10px; justify-content: flex-end; align-items: center; font-size: 15px; }
 .slot { background: var(--panel); border: 1px solid rgba(232,224,210,0.18); padding: 4px 10px; opacity: 0.55; }
 .slot.active { opacity: 1; border-color: var(--accent); color: var(--accent); }
+.consumable-slot { opacity: 0.75; }
 
 /* ---------- prompts / toasts / feed ---------- */
 #prompt {

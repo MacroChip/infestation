@@ -58,9 +58,14 @@ export class Hud {
     this.kits.textContent = `B BAR ${kits}`;
   }
 
-  setWeapon(slots: [SlotState | null, SlotState | null], act: 0 | 1, reserveAmmo: number, magOverride: number | null, reloading: boolean): void {
+  setWeapon(slots: [SlotState | null, SlotState | null], act: 0 | 1, reserveAmmo: number, magOverride: number | null, reloading: boolean, placing: boolean): void {
     const slot = slots[act];
-    if (slot) {
+    if (placing) {
+      this.weaponName.textContent = 'BARRICADE';
+      this.weaponName.classList.remove('reloading');
+      this.mag.textContent = 'B';
+      this.reserve.textContent = 'ready';
+    } else if (slot) {
       const def = WEAPONS[slot.w];
       this.weaponName.textContent = reloading ? 'RELOADING' : def.name.toUpperCase();
       this.weaponName.classList.toggle('reloading', reloading);
@@ -75,7 +80,7 @@ export class Hud {
     for (const i of [0, 1] as const) {
       const s = slots[i];
       this.slots[i].textContent = `${i + 1} ${s ? WEAPONS[s.w].name.split(' ')[0] : '·'}`;
-      this.slots[i].classList.toggle('active', act === i && s !== null);
+      this.slots[i].classList.toggle('active', !placing && act === i && s !== null);
     }
   }
 
@@ -90,6 +95,7 @@ export class Hud {
 
   setPlacementMode(on: boolean): void {
     this.placeHint.classList.toggle('hidden', !on);
+    this.kits.classList.toggle('active', on);
   }
 
   setUseProgress(frac: number | null): void {
