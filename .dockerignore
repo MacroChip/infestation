@@ -1,0 +1,10 @@
+# Keep the build context small and reproducible: never copy host-side installs
+# or build output into the image (the build stage regenerates them).
+.git
+node_modules
+client/dist
+*.log
+.DS_Store
+Dockerfile
+docker-compose.yml
+.dockerignore
