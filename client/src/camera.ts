@@ -13,6 +13,7 @@ export class TPCamera {
   cam: THREE.PerspectiveCamera;
   private dist = 4.2;
   private shoulder = 0.55;
+  private shoulderSide: 1 | -1 = 1;
   private fov = BASE_FOV;
 
   constructor(aspect: number) {
@@ -31,7 +32,7 @@ export class TPCamera {
     solids: BoxCollider[],
   ): void {
     const wantDist = aiming ? 2.0 : 4.2;
-    const wantShoulder = aiming ? 0.75 : 0.55;
+    const wantShoulder = (aiming ? 0.75 : 0.55) * this.shoulderSide;
     const wantFov = zoomed ? ZOOM_FOV : aiming ? AIM_FOV : BASE_FOV;
     const k = 1 - Math.exp(-12 * dt);
     this.dist += (wantDist - this.dist) * k;
@@ -65,6 +66,10 @@ export class TPCamera {
       this.cam.fov = this.fov;
       this.cam.updateProjectionMatrix();
     }
+  }
+
+  toggleShoulder(): void {
+    this.shoulderSide *= -1;
   }
 
   ray(yaw: number, pit: number): { origin: V3; dir: V3 } {

@@ -16,6 +16,7 @@ import {
   PLAYER_COLORS,
   RESPAWN_MS,
   SPAWN_INVULN_MS,
+  STAM_MAX,
   SWAP_FIRE_LOCKOUT_MS,
   CAPSULE_RADIUS,
   TICK_DT,
@@ -24,7 +25,7 @@ import {
   type AmmoType,
 } from '../../shared/constants';
 import { buildStaticColliders, SPAWN_POINTS } from '../../shared/map';
-import { capsuleHeight, eyeHeight, isSprinting, stepMove, type MoveState } from '../../shared/movement';
+import { capsuleHeight, eyeHeight, stepMove, type MoveState } from '../../shared/movement';
 import { computeSpread, pelletDirs, WEAPONS } from '../../shared/weapons';
 import { validatePlacement } from '../../shared/barricade';
 import type { BoxCollider, CapsuleTarget, CastHit } from '../../shared/collision';
@@ -139,7 +140,7 @@ export class Game {
       ws,
       name: name.slice(0, 16) || `Drifter-${pid}`,
       color: PLAYER_COLORS[(pid - 1) % PLAYER_COLORS.length],
-      move: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, onGround: true, stamina: 100, stamCd: 0 },
+      move: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, onGround: true, stamina: STAM_MAX, stamCd: 0 },
       yaw: 0,
       pit: 0,
       crouch: false,
@@ -217,7 +218,7 @@ export class Game {
     p.move = {
       x: best.x, y: 0, z: best.z,
       vx: 0, vy: 0, vz: 0,
-      onGround: true, stamina: 100, stamCd: 0,
+      onGround: true, stamina: STAM_MAX, stamCd: 0,
     };
     p.yaw = best.yaw;
     p.pit = 0;
@@ -251,7 +252,7 @@ export class Game {
       pit: n(cmd.pit, -1.5, 1.5),
       sp: cmd.sp === 1 ? 1 : 0,
       jp: cmd.jp === 1 ? 1 : 0,
-      cr: cmd.cr === 1 ? 1 : 0,
+      cr: 0,
       aim: cmd.aim === 1 ? 1 : 0,
       fire: Array.isArray(cmd.fire) ? cmd.fire.slice(0, 4) : undefined,
       rld: cmd.rld,
@@ -270,13 +271,8 @@ export class Game {
 
     p.yaw = cmd.yaw;
     p.pit = cmd.pit;
-    p.crouch = cmd.cr === 1;
+    p.crouch = false;
     p.aim = cmd.aim === 1;
-
-    // hard actions interrupt the medkit channel (kit is not consumed)
-    if (p.useEnd > 0 && ((cmd.fire?.length ?? 0) > 0 || isSprinting(p.move, cmd) || cmd.jp === 1)) {
-      p.useEnd = 0;
-    }
 
     if (cmd.swap !== undefined && cmd.swap !== p.act && p.slots[cmd.swap]) {
       p.act = cmd.swap;
@@ -300,19 +296,19 @@ export class Game {
     if (!slot || p.reloadEnd > 0) return;
     const def = WEAPONS[slot.w];
     if (slot.mag >= def.mag || p.reserve[def.ammo] <= 0) return;
-    p.useEnd = 0;
     p.reloadEnd = now + def.reload * 1000;
   }
 
   private tryUseMedkit(p: SPlayer, now: number): void {
-    if (p.meds <= 0 || p.hp >= HP_MAX || p.useEnd > 0) return;
-    p.reloadEnd = 0;
+    if (p.meds <= 0 || p.hp >= HP_MAX || p.useEnd > now) return;
+    p.meds -= 1;
+    p.hp = Math.min(HP_MAX, p.hp + MED_HEAL);
     p.useEnd = now + MED_USE_MS;
   }
 
   private tryFire(p: SPlayer, fc: { sid: number; yaw: number; pit: number }, now: number): void {
     const slot = p.slots[p.act];
-    if (!slot || p.reloadEnd > 0 || p.useEnd > 0) return;
+    if (!slot || p.reloadEnd > 0) return;
     const def = WEAPONS[slot.w];
     if (now < p.nextFire - 8) return;
     if (slot.mag <= 0) return;
@@ -322,6 +318,7 @@ export class Game {
 
     slot.mag -= 1;
     p.nextFire = now + def.interval * 1000 * 0.88;
+    if (slot.mag <= 0 && p.reserve[def.ammo] > 0) p.reloadEnd = now + def.reload * 1000;
     p.invulnUntil = 0; // firing drops spawn protection
 
     const pit = clamp(fc.pit, -1.5, 1.5);
@@ -529,13 +526,7 @@ export class Game {
           p.reserve[def.ammo] -= take;
         }
       }
-      if (p.alive && p.useEnd > 0 && now >= p.useEnd) {
-        p.useEnd = 0;
-        if (p.meds > 0 && p.hp < HP_MAX) {
-          p.meds -= 1;
-          p.hp = Math.min(HP_MAX, p.hp + MED_HEAL);
-        }
-      }
+      if (p.alive && p.useEnd > 0 && now >= p.useEnd) p.useEnd = 0;
       if (!p.alive && p.deadUntil > 0 && now >= p.deadUntil) this.respawn(p, now);
     }
 

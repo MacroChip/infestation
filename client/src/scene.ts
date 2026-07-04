@@ -286,17 +286,6 @@ export class SceneMgr {
     panel.castShadow = true;
     panel.receiveShadow = true;
     g.add(panel);
-    const legMat = new THREE.MeshLambertMaterial({ color: 0x5a5248 });
-    for (const side of [-1, 1]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 1.0), legMat);
-      leg.position.set(side * (BAR_HX * 0.7), BAR_HY * 0.55, 0.38);
-      leg.rotation.x = -0.85;
-      leg.castShadow = true;
-      g.add(leg);
-    }
-    const brace = new THREE.Mesh(new THREE.BoxGeometry(BAR_HX * 1.7, 0.1, 0.1), legMat);
-    brace.position.set(0, BAR_HY * 1.55, 0.02);
-    g.add(brace);
     g.position.set(bar.x, bar.y, bar.z);
     g.rotation.y = bar.yaw;
     this.scene.add(g);
