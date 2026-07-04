@@ -293,13 +293,17 @@ export class ClientGame {
     // this the client keeps predicting shots the server rejects, so rapidly
     // switching weapons back and forth would fire visually forever while the
     // authoritative magazine never actually drained.
-    if (
+    const validWeaponSwap =
       cmd.swap !== undefined &&
       this.you &&
       cmd.swap !== this.you.act &&
-      this.you.slots[cmd.swap]
-    ) {
+      this.you.slots[cmd.swap];
+    if (validWeaponSwap) {
       this.nextShotAt = Math.max(this.nextShotAt, now + SWAP_FIRE_LOCKOUT_MS);
+      if (this.placing) {
+        this.placing = false;
+        this.ghost.group.visible = false;
+      }
     }
     if (edges.pick && this.nearestWeaponLoot) cmd.pick = this.nearestWeaponLoot.id;
 

@@ -82,7 +82,13 @@ body {
   color: #fff; text-shadow: 0 1px 2px #000;
 }
 #consumables { display: flex; gap: 16px; font-size: 16px; opacity: 0.9; }
-#consumables span { background: var(--panel); padding: 4px 10px; border: 1px solid rgba(232,224,210,0.18); }
+#consumables span {
+  background: var(--panel); padding: 4px 10px; border: 1px solid rgba(232,224,210,0.18);
+}
+#meds.using {
+  color: #fff; border-color: rgba(123,201,95,0.75);
+  background: linear-gradient(to right, rgba(123,201,95,0.45) var(--med-use, 0%), var(--panel) var(--med-use, 0%));
+}
 
 /* ---------- weapon (bottom right) ---------- */
 #weapon-box { position: fixed; right: 24px; bottom: 24px; text-align: right; z-index: 10; }
@@ -106,13 +112,6 @@ body {
   position: fixed; left: 50%; bottom: 21%; transform: translateX(-50%);
   font-size: 16px; opacity: 0.9; color: #9fd9a4; z-index: 10;
 }
-#use-bar {
-  position: fixed; left: 50%; bottom: 31%; transform: translateX(-50%);
-  width: 240px; height: 14px; background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(232,224,210,0.3); z-index: 10;
-}
-#use-fill { height: 100%; width: 0; background: #7bc95f; }
-
 #killfeed { position: fixed; right: 24px; top: 20px; text-align: right; font-size: 15px; z-index: 10; }
 #killfeed div {
   background: var(--panel); border: 1px solid rgba(232,224,210,0.12);

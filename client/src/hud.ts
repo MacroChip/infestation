@@ -27,8 +27,6 @@ export class Hud {
   private slots = [$('slot0'), $('slot1')];
   private prompt = $('prompt');
   private placeHint = $('place-hint');
-  private useBar = $('use-bar');
-  private useFill = $('use-fill');
   private killfeed = $('killfeed');
   private toasts = $('toasts');
   private crosshair = $('crosshair');
@@ -96,11 +94,13 @@ export class Hud {
 
   setUseProgress(frac: number | null): void {
     if (frac === null) {
-      this.useBar.classList.add('hidden');
-    } else {
-      this.useBar.classList.remove('hidden');
-      this.useFill.style.width = `${Math.round(frac * 100)}%`;
+      this.meds.classList.remove('using');
+      this.meds.style.removeProperty('--med-use');
+      return;
     }
+
+    this.meds.classList.add('using');
+    this.meds.style.setProperty('--med-use', `${Math.round(frac * 100)}%`);
   }
 
   setCrosshairSpread(spreadRad: number, visible: boolean): void {
