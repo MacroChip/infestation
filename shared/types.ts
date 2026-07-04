@@ -41,7 +41,8 @@ export interface PlayerPublic {
   hp: number;
   alive: 0 | 1;
   aim: 0 | 1;
-  w: WeaponId | 0; // 0 = unarmed (or weapon stowed while readying a barricade)
+  w: WeaponId | 0; // 0 = unarmed
+  pl: 0 | 1; // readying a barricade
   k: number;
   d: number;
   ping: number;

@@ -63,6 +63,7 @@ interface RemoteSample {
   aim: 0 | 1;
   alive: 0 | 1;
   w: WeaponId | 0;
+  pl: 0 | 1;
 }
 
 export class ClientGame {
@@ -300,10 +301,10 @@ export class ClientGame {
       this.you.slots[cmd.swap];
     if (validWeaponSwap) {
       this.nextShotAt = Math.max(this.nextShotAt, now + SWAP_FIRE_LOCKOUT_MS);
-      if (this.placing) {
-        this.placing = false;
-        this.ghost.group.visible = false;
-      }
+    }
+    if (this.placing && (edges.swap !== null || cmd.swap !== undefined)) {
+      this.placing = false;
+      this.ghost.group.visible = false;
     }
     if (edges.pick && this.nearestWeaponLoot) cmd.pick = this.nearestWeaponLoot.id;
 
@@ -435,7 +436,7 @@ export class ClientGame {
         t: msg.time,
         x: p.x, y: p.y, z: p.z,
         yaw: p.yaw, pit: p.pit,
-        aim: p.aim, alive: p.alive, w: p.w,
+        aim: p.aim, alive: p.alive, w: p.w, pl: p.pl,
       });
       if (buf.length > 40) buf.splice(0, buf.length - 40);
     }
@@ -647,7 +648,7 @@ export class ClientGame {
       pit: this.input.pit,
       aim: aiming,
       alive: !this.isDead,
-      weapon: this.placing ? 0 : activeW,
+      weapon: this.placing ? 'bar' : activeW,
     };
     this.views.update(this.myPid, myPose, dt, false);
     this.views.setLocalVisible(this.myPid, !zoomed);
@@ -668,7 +669,7 @@ export class ClientGame {
         pit: lerp(a.pit, b.pit, u),
         aim: b.aim === 1,
         alive: b.alive === 1,
-        weapon: b.w,
+        weapon: b.pl === 1 ? 'bar' : b.w,
       };
       this.views.update(pid, pose, dt, true);
     }
@@ -759,7 +760,7 @@ export class ClientGame {
         : null;
     const reserveAmmo =
       activeW === 0 ? 0 : this.you.res[WEAPONS[activeW].ammo];
-    this.hud.setWeapon(this.you.slots, this.you.act, reserveAmmo, magOverride, reloading);
+    this.hud.setWeapon(this.you.slots, this.you.act, reserveAmmo, magOverride, reloading, this.placing);
 
     this.hud.setUseProgress(
       this.you.use > snow ? 1 - (this.you.use - snow) / MED_USE_MS : null,
