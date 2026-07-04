@@ -23,6 +23,7 @@ export class AudioMgr {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private noise: AudioBuffer | null = null;
+  private rumble: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
   muted = false;
 
   // must be called from a user gesture
@@ -152,5 +153,59 @@ export class AudioMgr {
     const { g, p } = this.spatial(dist, pan);
     this.burst(450, 0.5 * g, 0.3, p);
     this.tone(180, 60, 0.4 * g, 0.2, p);
+  }
+
+  // ---- boss ----
+
+  // continuous low engine roar while GOLIATH descends
+  rumbleStart(): void {
+    if (!this.ctx || !this.master || !this.noise || this.rumble) return;
+    const t0 = this.ctx.currentTime;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.55, t0 + 1.5);
+    gain.connect(this.master);
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 110;
+    f.connect(gain);
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noise;
+    src.loop = true;
+    src.connect(f);
+    src.start(t0);
+    this.rumble = { src, gain };
+  }
+
+  rumbleStop(): void {
+    if (!this.ctx || !this.rumble) return;
+    const t0 = this.ctx.currentTime;
+    this.rumble.gain.gain.setTargetAtTime(0.0001, t0, 0.2);
+    this.rumble.src.stop(t0 + 1);
+    this.rumble = null;
+  }
+
+  bossLand(dist: number, pan: number): void {
+    const { g, p } = this.spatial(dist, pan);
+    this.tone(70, 22, 1.2 * g, 0.8, p);
+    this.burst(220, 0.9 * g, 0.5, p);
+  }
+
+  missileLaunch(dist: number, pan: number): void {
+    const { g, p } = this.spatial(dist, pan);
+    this.burst(900, 0.55 * g, 0.45, p, 'bandpass');
+    this.tone(320, 90, 0.35 * g, 0.4, p, 'sawtooth');
+  }
+
+  explosion(dist: number, pan: number): void {
+    const { g, p } = this.spatial(dist, pan);
+    this.burst(320, 1.1 * g, 0.5, p);
+    this.tone(95, 28, 0.9 * g, 0.5, p);
+  }
+
+  // urgent double beep: a missile just locked onto YOU
+  lockWarn(): void {
+    this.tone(1250, 1250, 0.25, 0.09, 0, 'square');
+    setTimeout(() => this.tone(1250, 1250, 0.25, 0.09, 0, 'square'), 160);
   }
 }

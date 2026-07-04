@@ -151,6 +151,74 @@ export class Effects {
     }
   }
 
+  private particle(pos: V3, vx: number, vy: number, vz: number, life: number, r: number, g: number, b: number): void {
+    const s = this.pSlot;
+    this.pSlot = (this.pSlot + 1) % MAX_PARTICLES;
+    this.pPos[s * 3] = pos.x;
+    this.pPos[s * 3 + 1] = pos.y;
+    this.pPos[s * 3 + 2] = pos.z;
+    this.pVel[s * 3] = vx;
+    this.pVel[s * 3 + 1] = vy;
+    this.pVel[s * 3 + 2] = vz;
+    this.pLife[s] = life;
+    this.pCol[s * 3] = r;
+    this.pCol[s * 3 + 1] = g;
+    this.pCol[s * 3 + 2] = b;
+  }
+
+  // exhaust puff behind a boss missile
+  trail(pos: V3): void {
+    this.particle(
+      pos,
+      (Math.random() - 0.5) * 0.6,
+      Math.random() * 1.2 + 8, // counters pool gravity so smoke hangs
+      (Math.random() - 0.5) * 0.6,
+      0.4 + Math.random() * 0.2,
+      0.62 + Math.random() * 0.1,
+      0.6 + Math.random() * 0.1,
+      0.58 + Math.random() * 0.1,
+    );
+  }
+
+  // missile detonation / boss death: fireball particles + a big flash
+  explosion(pos: V3, big = false): void {
+    const n = big ? 42 : 22;
+    const speed = big ? 13 : 8;
+    for (let i = 0; i < n; i++) {
+      const hot = Math.random() < 0.65;
+      this.particle(
+        pos,
+        (Math.random() - 0.5) * 2 * speed,
+        Math.random() * speed * 0.9 + 1,
+        (Math.random() - 0.5) * 2 * speed,
+        0.35 + Math.random() * 0.3,
+        hot ? 1.0 : 0.25,
+        hot ? 0.45 + Math.random() * 0.25 : 0.22,
+        hot ? 0.1 : 0.2,
+      );
+    }
+    const mat = new THREE.SpriteMaterial({
+      map: this.flashTex,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const s = new THREE.Sprite(mat);
+    const scale = big ? 9 : 4.5;
+    s.scale.set(scale, scale, 1);
+    s.position.set(pos.x, pos.y, pos.z);
+    this.scene.add(s);
+    this.flashes.push({ sprite: s, life: 0.09 });
+  }
+
+  // touchdown dust: a ring of ground puffs around the landing point
+  dustRing(x: number, z: number, radius: number): void {
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      this.impact({ x: x + Math.cos(a) * radius, y: 0.3, z: z + Math.sin(a) * radius }, 'g');
+    }
+  }
+
   // Step visual projectiles against the client's view of the world so
   // tracers stop plausibly even before the authoritative impact arrives.
   update(dt: number, solids: BoxCollider[], capsules: CapsuleTarget[]): void {

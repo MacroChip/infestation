@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import {
   BAR_PLACE_DISTANCE,
+  BOSS_PID,
   CLIENT_STEP,
   EYE_STAND,
   INPUT_BATCH,
@@ -16,7 +17,7 @@ import {
 } from '../../shared/constants';
 import { buildStaticColliders, type LootTable } from '../../shared/map';
 import { barricadeCollider, validatePlacement } from '../../shared/barricade';
-import type { BoxCollider } from '../../shared/collision';
+import type { BoxCollider, CapsuleTarget } from '../../shared/collision';
 import { castSegment, groundSupportAt } from '../../shared/collision';
 import { stepMove, type MoveState } from '../../shared/movement';
 import { computeSpread, pelletDirs, WEAPONS } from '../../shared/weapons';
@@ -48,6 +49,7 @@ import { Input } from './input';
 import { TPCamera } from './camera';
 import { SceneMgr } from './scene';
 import { PlayerViews, type PlayerPose } from './players';
+import { BossView } from './boss';
 import { Effects } from './effects';
 import { AudioMgr } from './audio';
 import { Hud, Roster, type ScoreRow } from './hud';
@@ -72,6 +74,7 @@ export class ClientGame {
   private scene: SceneMgr;
   private camera: TPCamera;
   private views: PlayerViews;
+  private bossView: BossView;
   private effects: Effects;
   private audio = new AudioMgr();
   private hud = new Hud();
@@ -125,6 +128,7 @@ export class ClientGame {
     this.scene = new SceneMgr(canvas);
     this.camera = new TPCamera(window.innerWidth / window.innerHeight);
     this.views = new PlayerViews(this.scene.scene);
+    this.bossView = new BossView(this.scene.scene);
     this.effects = new Effects(this.scene.scene);
     this.input = new Input(canvas);
     this.ghost = this.scene.buildGhost();
@@ -285,6 +289,7 @@ export class ClientGame {
     }
     if (edges.use) cmd.use = 1;
     if (edges.hurt && !this.isDead) cmd.hurt = 1;
+    if (edges.summon && !this.isDead) cmd.summon = 1;
     if (edges.swap !== null) cmd.swap = edges.swap;
     else if (wheel && this.you) {
       const other = this.you.act === 0 ? 1 : 0;
@@ -406,10 +411,15 @@ export class ClientGame {
     }
   }
 
+  // players + boss + missiles: everything a shot can visibly connect with
+  private targetCapsules(): CapsuleTarget[] {
+    return [...this.views.capsules(), ...this.bossView.capsules()];
+  }
+
   private fireAngles(): { yaw: number; pit: number } {
     const ray = this.camera.ray(this.input.yaw, this.input.pit);
     const far = addScaled(ray.origin, ray.dir, 260);
-    const hit = castSegment(ray.origin, far, this.allSolids(), this.views.capsules(), this.myPid);
+    const hit = castSegment(ray.origin, far, this.allSolids(), this.targetCapsules(), this.myPid);
     const target = hit ? v3(hit.x, hit.y, hit.z) : far;
     const eye = v3(this.pred.x, this.pred.y + EYE_STAND, this.pred.z);
     const d = sub(target, eye);
@@ -424,6 +434,7 @@ export class ClientGame {
     this.lastPlayers = msg.players;
     const wasDead = this.isDead;
     this.you = msg.you;
+    this.bossView.setFromSnap(msg.boss, msg.ms);
 
     for (const p of msg.players) {
       if (p.id === this.myPid) continue;
@@ -533,7 +544,7 @@ export class ClientGame {
         break;
       }
       case 'kill': {
-        const wName = ev.w === 0 ? '?' : WEAPONS[ev.w].name;
+        const wName = ev.a === BOSS_PID ? 'GOLIATH' : ev.w === 0 ? '?' : WEAPONS[ev.w].name;
         this.hud.addKillfeed(
           `${this.roster.colored(ev.a)} <span style="opacity:.6">[${wName}]</span> ${this.roster.colored(ev.v)}`,
           ev.a === this.myPid || ev.v === this.myPid,
@@ -608,6 +619,46 @@ export class ClientGame {
       case 'note':
         if (ev.pid === this.myPid) this.hud.toast(ev.text);
         break;
+      case 'bossin': {
+        this.hud.addKillfeed(`⚠ ${this.roster.colored(BOSS_PID)} inbound`, true);
+        this.hud.toast('something big is falling out of the sky');
+        this.audio.rumbleStart();
+        break;
+      }
+      case 'bossland': {
+        this.audio.rumbleStop();
+        this.effects.dustRing(ev.x, ev.z, 2.6);
+        this.effects.dustRing(ev.x, ev.z, 4.2);
+        const { d, p } = this.panDist({ x: ev.x, y: 0, z: ev.z });
+        this.audio.bossLand(d, p);
+        break;
+      }
+      case 'bossdie': {
+        this.audio.rumbleStop(); // in case it was sniped out of the sky
+        this.effects.explosion(v3(ev.x, 4.5, ev.z), true);
+        const { d, p } = this.panDist({ x: ev.x, y: 4.5, z: ev.z });
+        this.audio.explosion(d, p);
+        this.hud.addKillfeed(`${this.roster.colored(BOSS_PID)} destroyed`, true);
+        break;
+      }
+      case 'mfire': {
+        this.bossView.addMissile(ev.m);
+        const { d, p } = this.panDist({ x: ev.m.x, y: ev.m.y, z: ev.m.z });
+        this.audio.missileLaunch(d, p);
+        if (ev.tgt === this.myPid) {
+          this.hud.toast('⚠ MISSILE LOCK — shoot it down or run');
+          this.audio.lockWarn();
+        }
+        break;
+      }
+      case 'mboom': {
+        this.bossView.removeMissile(ev.id);
+        const pos = v3(ev.x, ev.y, ev.z);
+        this.effects.explosion(pos);
+        const { d, p } = this.panDist(pos);
+        this.audio.explosion(d, p);
+        break;
+      }
     }
   }
 
@@ -686,9 +737,12 @@ export class ClientGame {
       this.allSolids(),
     );
 
+    this.bossView.update(dt, this.effects);
+    this.hud.setBoss(this.bossView.hpFrac, this.bossView.state?.ph === 0);
+
     this.updateGhost();
     this.updatePromptAndHud(aiming, zoomed, activeW);
-    this.effects.update(dt, this.allSolids(), this.views.capsules());
+    this.effects.update(dt, this.allSolids(), this.targetCapsules());
     this.scene.animateLoot(t / 1000);
     this.updateDebug();
 

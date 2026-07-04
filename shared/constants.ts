@@ -1,7 +1,7 @@
 // Tuning constants shared by client prediction and server authority.
 // Keep client + server in lockstep: changing these requires restarting both.
 
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 export const MAX_PLAYERS = 16;
 
 // --- timing ---
@@ -62,6 +62,30 @@ export const BAR_PLACE_DISTANCE = 2.0; // default placement offset in front of t
 export const BAR_PLACE_COOLDOWN_MS = 900;
 export const BAR_SPAWN_CLEARANCE = 7; // min distance to spawn points
 export const BAR_MAX_COUNT = 48;
+
+// --- boss ("GOLIATH", summoned by a secret input) ---
+export const BOSS_PID = -1; // attacker id in hit/kill events; never a real player
+export const MISSILE_PID_BASE = -1000; // missile capsule pids: MISSILE_PID_BASE - missileId
+export const BOSS_HP = 2500;
+export const BOSS_RADIUS = 2.2; // body capsule radius (touch = death)
+export const BOSS_HEIGHT = 9;
+export const BOSS_SPAWN_ALT = 130; // descent starts this high
+export const BOSS_DESCENT_RATE = 0.35; // vertical speed = y * rate (suicide-burn profile)
+export const BOSS_DESCENT_MAX = 24; // entry speed cap
+export const BOSS_DESCENT_MIN = 3; // touchdown speed floor
+export const BOSS_WALK_SPEED = 3.2; // slower than a walking player
+export const BOSS_LAND_PAUSE_MS = 2000; // stands still after touchdown, then opens fire
+export const BOSS_MISSILE_INTERVAL_MS = 8000; // follow-up launches after the first
+export const BOSS_TOUCH_DMG = 9999;
+
+// --- boss missile (slow, heat-seeking, can be shot down) ---
+export const MISSILE_SPEED = 10;
+export const MISSILE_TURN_RATE = 2.0; // rad/s steering limit
+export const MISSILE_DMG = 70;
+export const MISSILE_SPLASH = 3.2; // damage radius around the detonation
+export const MISSILE_FUSE_DIST = 1.1; // proximity fuse vs the locked target
+export const MISSILE_LIFE_S = 25;
+export const MISSILE_HIT_RADIUS = 0.5; // capsule radius for shooting it down
 
 // --- ammo ---
 export type AmmoType = 'rifle' | 'smg' | 'shell' | 'long';

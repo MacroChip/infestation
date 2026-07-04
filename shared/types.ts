@@ -31,6 +31,28 @@ export interface BarricadeState {
   hp: number;
 }
 
+// The summoned boss, broadcast in every snapshot while active.
+export interface BossPublic {
+  x: number;
+  y: number; // feet; > 0 while descending
+  z: number;
+  yaw: number;
+  hp: number;
+  ph: 0 | 1 | 2; // 0 descending, 1 landed (pre-fire pause), 2 hunting
+}
+
+// A boss missile in flight. Position+velocity each snapshot; clients
+// integrate between snapshots for smooth motion.
+export interface MissilePublic {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+}
+
 export interface PlayerPublic {
   id: number;
   x: number;
@@ -101,6 +123,7 @@ export interface InputCmd {
   pick?: number; // loot item id (press-E pickup)
   place?: { x: number; z: number; yaw: number };
   hurt?: 1; // dev helper: damage yourself to test healing
+  summon?: 1; // secret combo entered: call in the boss
 }
 
 export type ImpactKind = 'w' | 'b' | 'p' | 'g' | 'e'; // wall/barricade/player/ground/end-of-range
@@ -130,7 +153,12 @@ export type GameEvent =
   | { t: 'badd'; bar: BarricadeState }
   | { t: 'bhp'; id: number; hp: number }
   | { t: 'bgone'; id: number }
-  | { t: 'note'; pid: number; text: string }; // private toast, clients filter by pid
+  | { t: 'note'; pid: number; text: string } // private toast, clients filter by pid
+  | { t: 'bossin'; x: number; z: number } // summoned; descent begins above (x,z)
+  | { t: 'bossland'; x: number; z: number }
+  | { t: 'bossdie'; x: number; z: number }
+  | { t: 'mfire'; m: MissilePublic; tgt: number } // missile launched, locked on tgt
+  | { t: 'mboom'; id: number; x: number; y: number; z: number };
 
 export interface RosterEntry {
   pid: number;
@@ -161,6 +189,8 @@ export type ServerMsg =
       tps: number; // measured tick rate
       players: PlayerPublic[];
       you: YouState;
+      boss?: BossPublic;
+      ms?: MissilePublic[];
       ev?: GameEvent[];
     }
   | { t: 'pong'; t0: number; st: number }
