@@ -65,6 +65,8 @@ export class Boss {
   private z = 0;
   private yaw = 0;
   private hp = BOSS_HP;
+  private maxHp = BOSS_HP;
+  private missileSalvoSize = 1;
   private nextMissileAt = 0;
   private missiles = new Map<number, Missile>();
   private nextMissileId = 1;
@@ -74,14 +76,17 @@ export class Boss {
   }
 
   // Summon if none is active. Returns false when one is already deployed.
-  trySummon(events: GameEvent[]): boolean {
+  trySummon(events: GameEvent[], playerCount: number): boolean {
     if (this.active) return false;
     const spot = this.pickLandingSpot();
     this.x = spot.x;
     this.z = spot.z;
     this.y = BOSS_SPAWN_ALT;
     this.yaw = 0;
-    this.hp = BOSS_HP;
+    const scaledPlayers = Math.max(1, playerCount);
+    this.maxHp = BOSS_HP * scaledPlayers;
+    this.hp = this.maxHp;
+    this.missileSalvoSize = Math.ceil(Math.sqrt(scaledPlayers));
     this.phase = 'descend';
     events.push({ t: 'bossin', x: r2(this.x), z: r2(this.z) });
     return true;
@@ -129,7 +134,7 @@ export class Boss {
     } else if (this.phase === 'landed') {
       if (now >= this.nextMissileAt) {
         this.phase = 'hunt';
-        this.fireMissile(players, events);
+        this.fireMissileSalvo(players, events);
         this.nextMissileAt = now + BOSS_MISSILE_INTERVAL_MS;
       }
     } else if (this.phase === 'hunt') {
@@ -146,7 +151,7 @@ export class Boss {
         }
       }
       if (now >= this.nextMissileAt) {
-        this.fireMissile(players, events);
+        this.fireMissileSalvo(players, events);
         this.nextMissileAt = now + BOSS_MISSILE_INTERVAL_MS;
       }
     }
@@ -177,6 +182,10 @@ export class Boss {
       if (p.y + STAND_HEIGHT < this.y || p.y > this.y + BOSS_HEIGHT) continue;
       damage(p.pid, BOSS_TOUCH_DMG);
     }
+  }
+
+  private fireMissileSalvo(players: BossTarget[], events: GameEvent[]): void {
+    for (let i = 0; i < this.missileSalvoSize; i++) this.fireMissile(players, events);
   }
 
   private fireMissile(players: BossTarget[], events: GameEvent[]): void {
@@ -327,6 +336,7 @@ export class Boss {
       z: r2(this.z),
       yaw: r3(this.yaw),
       hp: Math.max(0, Math.round(this.hp)),
+      mhp: Math.round(this.maxHp),
       ph: this.phase === 'descend' ? 0 : this.phase === 'landed' ? 1 : 2,
     };
   }

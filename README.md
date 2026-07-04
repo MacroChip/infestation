@@ -138,16 +138,17 @@ artillery piece:
 - It descends from the sky on a landing burn - fast entry, decelerating
   to a gentle touchdown on a clear patch of the yard (~11 seconds; the
   whole server hears the rumble and sees the inbound warning).
-- Two seconds after touchdown it fires its first **missile at a random
-  player**, then another every 8 seconds. Missiles are slow but
+- Two seconds after touchdown it fires its first **missile salvo at random
+  players**, then another every 8 seconds. Salvo size scales with the number
+  of players online when GOLIATH is summoned. Missiles are slow but
   heat-seeking - sprint, break line of sight, or **shoot them down**
   (one bullet detonates them). A lock warning appears when it's you.
   The detonation deals 70 splash damage in ~3m, wherever it happens.
 - It always walks toward the closest player. **Touching it is instant
   death** - so is being under it when it lands.
-- It has 2500 hp and can be destroyed by gunfire (the hp bar sits top
-  center while it's active). Only one can be active at a time; kills by
-  GOLIATH credit no one.
+- It has 2500 hp per online player at summon time and can be destroyed by
+  gunfire (the hp bar sits top center while it's active). Only one can be
+  active at a time; kills by GOLIATH credit no one.
 
 Everything about it is server-authoritative and lives in
 `server/src/boss.ts` (sim) + `client/src/boss.ts` (visuals); tuning is
