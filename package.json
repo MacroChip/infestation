@@ -1,0 +1,27 @@
+{
+  "name": "leadfield",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LEADFIELD - browser-based multiplayer PvP survival shooter prototype (original assets/code)",
+  "scripts": {
+    "dev": "vite",
+    "server": "tsx watch server/src/index.ts",
+    "start": "tsx server/src/index.ts",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "loadtest": "tsx scripts/loadtest.ts"
+  },
+  "dependencies": {
+    "three": "^0.170.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/three": "^0.170.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

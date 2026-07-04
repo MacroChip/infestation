@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LEADFIELD</title>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="crosshair"><i class="n"></i><i class="s"></i><i class="e"></i><i class="w"></i><i class="dot"></i></div>
+    <div id="scope" class="hidden"></div>
+    <div id="hitmarker"></div>
+    <div id="vignette"></div>
+    <div id="invuln" class="hidden">SPAWN PROTECTION</div>
+
+    <div id="status">
+      <div class="bar hp"><div id="hp-fill"></div><span id="hp-num">100</span></div>
+      <div class="bar stam"><div id="stam-fill"></div></div>
+      <div id="consumables">
+        <span id="meds" title="medkits (Q)">MED 0</span>
+        <span id="kits" title="barricade kits (B)">BAR 0</span>
+      </div>
+    </div>
+
+    <div id="weapon-box">
+      <div id="weapon-name">UNARMED</div>
+      <div id="ammo"><span id="mag">--</span><span id="reserve">/ --</span></div>
+      <div id="slots"><span id="slot0" class="slot">1 ·</span><span id="slot1" class="slot">2 ·</span></div>
+    </div>
+
+    <div id="prompt" class="hidden"></div>
+    <div id="place-hint" class="hidden">LMB place · RMB cancel</div>
+    <div id="use-bar" class="hidden"><div id="use-fill"></div></div>
+    <div id="killfeed"></div>
+    <div id="toasts"></div>
+    <div id="hint">WASD move · SHIFT sprint · SPACE jump · C crouch · RMB aim · R reload · E pick up · Q medkit · B barricade · TAB scores · F3 net stats</div>
+  </div>
+
+  <pre id="debug" class="hidden"></pre>
+
+  <div id="scoreboard" class="hidden">
+    <h3>MILLYARD · FREE-FIRE</h3>
+    <table><thead><tr><th>CALLSIGN</th><th>K</th><th>D</th><th>PING</th></tr></thead>
+    <tbody id="score-rows"></tbody></table>
+  </div>
+
+  <div id="death-screen" class="hidden">
+    <h2>ELIMINATED</h2>
+    <div id="death-by"></div>
+    <div id="death-note">your gear hit the dirt where you fell</div>
+    <div id="death-timer"></div>
+  </div>
+
+  <div id="start-screen">
+    <h1>LEAD<span>FIELD</span></h1>
+    <p class="tagline">MILLYARD FREE-FIRE EXERCISE — LIVE ROUNDS ONLY</p>
+    <div class="join-row">
+      <input id="name-input" maxlength="16" placeholder="callsign" autocomplete="off" />
+      <button id="join-btn">DEPLOY</button>
+    </div>
+    <div id="start-status"></div>
+    <div class="controls">
+      <div><b>WASD</b> move · <b>SHIFT</b> sprint · <b>SPACE</b> jump · <b>C / CTRL</b> crouch</div>
+      <div><b>LMB</b> fire · <b>RMB</b> aim over shoulder · <b>R</b> reload · <b>1/2/wheel</b> weapons</div>
+      <div><b>E</b> pick up weapons · ammo &amp; medkits auto-pickup · <b>Q</b> medkit</div>
+      <div><b>B</b> deploy barricade · <b>TAB</b> scoreboard · <b>F3</b> net debug · <b>M</b> mute</div>
+    </div>
+    <p class="fine">no rounds · no extraction · no mercy — respawn in 3s, gear drops where you die</p>
+  </div>
+
+  <div id="click-catch" class="hidden">CLICK TO CAPTURE MOUSE</div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
