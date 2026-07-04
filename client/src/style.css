@@ -257,3 +257,13 @@ body {
   border-top: 8px solid var(--accent);
   filter: drop-shadow(0 1px 2px #000);
 }
+
+
+#goliath-reward {
+  position: fixed; top: 16%; left: 50%; transform: translateX(-50%);
+  color: #ffb36b; font-size: 24px; letter-spacing: 4px; text-align: center; z-index: 10;
+  text-shadow: 0 0 10px rgba(255, 122, 46, 0.95), 0 2px 4px #000;
+  background: rgba(16, 10, 6, 0.55); border: 1px solid rgba(255, 122, 46, 0.45);
+  padding: 8px 18px;
+}
+.slot.locked { color: #b8b0a4; border-color: rgba(184,176,164,0.45); opacity: 0.82; }

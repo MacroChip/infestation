@@ -233,8 +233,15 @@ export class ClientGame {
   }
 
   private activeWeapon(): WeaponId | 0 {
+    const snow = this.net.serverNow();
+    if (this.you && this.you.gi <= snow && this.you.gm > snow && !this.isDead) return 'minigun';
     const slot = this.you?.slots[this.you.act];
     return slot?.w ?? 0;
+  }
+
+  private goliathMinigunActive(): boolean {
+    const snow = this.net.serverNow();
+    return !!this.you && this.you.gi <= snow && this.you.gm > snow && !this.isDead;
   }
 
   private pendingShotCount(): number {
@@ -266,6 +273,11 @@ export class ClientGame {
       mz /= ml;
     }
 
+    const locked = this.goliathMinigunActive();
+    if (locked) {
+      this.placing = false;
+      this.ghost.group.visible = false;
+    }
     const aiming = this.input.aimHeld && !this.placing;
     const cmd: InputCmd = {
       seq: this.seq,
@@ -279,7 +291,7 @@ export class ClientGame {
       aim: aiming ? 1 : 0,
     };
 
-    if (edges.reload) {
+    if (edges.reload && !locked) {
       cmd.rld = 1;
       const w = this.activeWeapon();
       if (w !== 0 && this.you) {
@@ -287,11 +299,11 @@ export class ClientGame {
         if (slot.mag < WEAPONS[w].mag && this.you.res[WEAPONS[w].ammo] > 0) this.audio.reload();
       }
     }
-    if (edges.use) cmd.use = 1;
+    if (edges.use && !locked) cmd.use = 1;
     if (edges.hurt && !this.isDead) cmd.hurt = 1;
     if (edges.summon && !this.isDead) cmd.summon = 1;
-    if (edges.swap !== null) cmd.swap = edges.swap;
-    else if (wheel && this.you) {
+    if (!locked && edges.swap !== null) cmd.swap = edges.swap;
+    else if (!locked && wheel && this.you) {
       const other = this.you.act === 0 ? 1 : 0;
       if (this.you.slots[other]) cmd.swap = other;
     }
@@ -320,10 +332,10 @@ export class ClientGame {
       this.placing = false;
       this.ghost.group.visible = false;
     }
-    if (edges.pick && this.nearestWeaponLoot) cmd.pick = this.nearestWeaponLoot.id;
+    if (!locked && edges.pick && this.nearestWeaponLoot) cmd.pick = this.nearestWeaponLoot.id;
 
     // barricade placement mode
-    if (edges.placeToggle) {
+    if (!locked && edges.placeToggle) {
       if (this.placing) {
         this.placing = false;
       } else if ((this.you?.kits ?? 0) > 0 && !this.isDead) {
@@ -363,18 +375,19 @@ export class ClientGame {
 
   private handleFire(cmd: InputCmd, pressedEdge: boolean, aiming: boolean, now: number): void {
     if (!this.you) return;
+    const locked = this.goliathMinigunActive();
     const slot = this.you.slots[this.you.act];
-    if (!slot) {
+    if (!locked && !slot) {
       if (pressedEdge) this.audio.dry();
       return;
     }
-    const def = WEAPONS[slot.w];
+    const def = WEAPONS[locked ? 'minigun' : slot!.w];
     const snow = this.net.serverNow();
-    if (this.you.rld > snow) return;
+    if (!locked && this.you.rld > snow) return;
     const wantFire = def.auto ? this.input.fireHeld : pressedEdge;
     if (!wantFire || now < this.nextShotAt) return;
 
-    const displayMag = Math.max(0, slot.mag - this.pendingShotCount());
+    const displayMag = locked ? Number.POSITIVE_INFINITY : Math.max(0, slot!.mag - this.pendingShotCount());
     if (displayMag <= 0) {
       // Empty mag: auto-reload if there's reserve ammo so holding fire keeps
       // shooting until you're truly out, instead of forcing a manual R press.
@@ -405,13 +418,13 @@ export class ClientGame {
     const eye = v3(this.pred.x, this.pred.y + EYE_STAND, this.pred.z);
     const origin = addScaled(eye, center, 0.3);
     dirs.forEach((d, i) =>
-      this.effects.spawnProjectile(`c${sid}:${i}`, this.myPid, slot.w, origin, d),
+      this.effects.spawnProjectile(`c${sid}:${i}`, this.myPid, def.id, origin, d),
     );
-    this.effects.muzzleFlash(addScaled(origin, center, 0.3), slot.w);
-    this.audio.shot(slot.w, 0, 0);
+    this.effects.muzzleFlash(addScaled(origin, center, 0.3), def.id);
+    this.audio.shot(def.id, 0, 0);
     this.input.kickView((Math.random() - 0.5) * def.kick * 0.5, def.kick * (0.8 + Math.random() * 0.4));
 
-    if (displayMag === 1 && (this.you.res[def.ammo] ?? 0) > 0) {
+    if (!locked && displayMag === 1 && (this.you.res[def.ammo] ?? 0) > 0) {
       this.nextShotAt = Math.max(this.nextShotAt, now + def.reload * 1000);
       if (now - this.autoReloadAt > 250) {
         this.audio.reload();
@@ -816,20 +829,26 @@ export class ClientGame {
     if (!this.you) return;
     const snow = this.net.serverNow();
     this.hud.setVitals(this.you.hp, (this.pred.stamina / STAM_MAX) * 100);
-    this.hud.setConsumables(this.you.meds, this.you.kits);
+    const gInvLeft = Math.max(0, this.you.gi - snow);
+    const gMinigunLeft = Math.max(0, this.you.gm - Math.max(snow, this.you.gi));
+    const locked = this.goliathMinigunActive();
+    this.hud.setConsumables(this.you.meds, this.you.kits, locked);
+    if (gInvLeft > 0) this.hud.setGoliathReward(`GOLIATH DOWN · INVULNERABLE ${Math.ceil(gInvLeft / 1000)}s · MINIGUN IN ${Math.ceil(gInvLeft / 1000)}s`);
+    else if (gMinigunLeft > 0) this.hud.setGoliathReward(`GOLIATH MINIGUN ${Math.ceil(gMinigunLeft / 1000)}s · LOADOUT LOCKED`);
+    else this.hud.setGoliathReward(null);
     const reloading = this.you.rld > snow;
     const magOverride =
       this.you.slots[this.you.act] !== null
         ? Math.max(0, this.you.slots[this.you.act]!.mag - this.pendingShotCount())
         : null;
     const reserveAmmo =
-      activeW === 0 ? 0 : this.you.res[WEAPONS[activeW].ammo];
-    this.hud.setWeapon(this.you.slots, this.you.act, reserveAmmo, magOverride, reloading, this.placing);
+      locked ? Infinity : activeW === 0 ? 0 : this.you.res[WEAPONS[activeW].ammo];
+    this.hud.setWeapon(this.you.slots, this.you.act, reserveAmmo, locked ? null : magOverride, reloading, this.placing, locked);
 
     this.hud.setUseProgress(
       this.you.use > snow ? 1 - (this.you.use - snow) / MED_USE_MS : null,
     );
-    const spawnProtected = this.you.inv > snow && !this.isDead;
+    const spawnProtected = (this.you.inv > snow || this.you.gi > snow) && !this.isDead;
     this.hud.setInvuln(spawnProtected);
     this.views.setSpawnProtected(this.myPid, spawnProtected);
     this.hud.setScope(zoomed);

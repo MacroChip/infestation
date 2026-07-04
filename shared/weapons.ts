@@ -117,11 +117,33 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     pickupReserve: 5,
     tracer: 0xaef2ff,
   },
+  minigun: {
+    id: 'minigun',
+    name: 'Goliath Minigun',
+    ammo: 'rifle',
+    dmg: 17,
+    pellets: 1,
+    interval: 0.04,
+    auto: true,
+    velocity: 125,
+    gravity: 4,
+    life: 1.35,
+    mag: 999,
+    reload: 99,
+    spreadHip: 0.025,
+    spreadAim: 0.018,
+    kick: 0.015,
+    barricadeMult: 1.4,
+    suppressed: false,
+    zoom: false,
+    pickupReserve: 0,
+    tracer: 0xff7a2e,
+  },
 };
 
 export const WEAPON_IDS: WeaponId[] = ['ar', 'smg', 'shotgun', 'sniper'];
 
-const WEAPON_INDEX: Record<WeaponId, number> = { ar: 0, smg: 1, shotgun: 2, sniper: 3 };
+const WEAPON_INDEX: Record<WeaponId, number> = { ar: 0, smg: 1, shotgun: 2, sniper: 3, minigun: 4 };
 
 // Final spread in radians. Client predicts with the same inputs the server
 // uses, and the server echoes the value in the 'shot' event so remote

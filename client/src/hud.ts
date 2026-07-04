@@ -35,6 +35,7 @@ export class Hud {
   private hitmark = $('hitmarker');
   private vignette = $('vignette');
   private invuln = $('invuln');
+  private goliathReward = $('goliath-reward');
   private compassStrip = $('compass-strip');
   private compassHeading = $('compass-heading');
   private compassTicks: HTMLDivElement[] = [];
@@ -70,14 +71,22 @@ export class Hud {
   }
 
   // key labels mirror the weapon slots' "1 <name>" style
-  setConsumables(meds: number, kits: number): void {
-    this.meds.textContent = `Q MED x ${meds}`;
-    this.kits.textContent = `B BARRICADE x ${kits}`;
+  setConsumables(meds: number, kits: number, locked = false): void {
+    this.meds.textContent = `${locked ? '🔒 ' : ''}Q MED x ${meds}`;
+    this.kits.textContent = `${locked ? '🔒 ' : ''}B BARRICADE x ${kits}`;
+    this.meds.classList.toggle('locked', locked);
+    this.kits.classList.toggle('locked', locked);
   }
 
-  setWeapon(slots: [SlotState | null, SlotState | null], act: 0 | 1, reserveAmmo: number, magOverride: number | null, reloading: boolean, placing: boolean): void {
+  setWeapon(slots: [SlotState | null, SlotState | null], act: 0 | 1, reserveAmmo: number, magOverride: number | null, reloading: boolean, placing: boolean, locked = false): void {
     const slot = slots[act];
-    if (placing) {
+    if (locked) {
+      const def = WEAPONS.minigun;
+      this.weaponName.textContent = def.name.toUpperCase();
+      this.weaponName.classList.remove('reloading');
+      this.mag.textContent = '∞';
+      this.reserve.textContent = '/ ∞';
+    } else if (placing) {
       this.weaponName.textContent = 'BARRICADE';
       this.weaponName.classList.remove('reloading');
       this.mag.textContent = 'B';
@@ -96,8 +105,9 @@ export class Hud {
     }
     for (const i of [0, 1] as const) {
       const s = slots[i];
-      this.slots[i].textContent = `${i + 1} ${s ? WEAPONS[s.w].name.split(' ')[0] : '·'}`;
-      this.slots[i].classList.toggle('active', !placing && act === i && s !== null);
+      this.slots[i].textContent = `${locked ? '🔒 ' : ''}${i + 1} ${s ? WEAPONS[s.w].name.split(' ')[0] : '·'}`;
+      this.slots[i].classList.toggle('active', !locked && !placing && act === i && s !== null);
+      this.slots[i].classList.toggle('locked', locked);
     }
   }
 
@@ -137,6 +147,16 @@ export class Hud {
 
   setInvuln(on: boolean): void {
     this.invuln.classList.toggle('hidden', !on);
+  }
+
+  setGoliathReward(text: string | null): void {
+    if (text === null) {
+      this.goliathReward.classList.add('hidden');
+      this.goliathReward.textContent = '';
+      return;
+    }
+    this.goliathReward.textContent = text;
+    this.goliathReward.classList.remove('hidden');
   }
 
   setCompass(yaw: number): void {

@@ -65,6 +65,7 @@ export const GUN_PALETTE: Record<WeaponId, GunPalette> = {
   smg: { body: 0x2a3550, metal: 0x141822, accent: 0x9ab0e0 }, // dark navy, suppressed
   shotgun: { body: 0x7a4a26, metal: 0x2a2a30, accent: 0xd98a3a }, // wood + brass
   sniper: { body: 0x30302f, metal: 0x101010, accent: 0xaef2ff }, // long black rig
+  minigun: { body: 0x3b342b, metal: 0x141414, accent: 0xff7a2e }, // Goliath reward cannon
 };
 
 function buildGun(w: WeaponId): THREE.Group {

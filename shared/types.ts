@@ -2,7 +2,7 @@
 
 import type { AmmoType } from './constants';
 
-export type WeaponId = 'ar' | 'smg' | 'shotgun' | 'sniper';
+export type WeaponId = 'ar' | 'smg' | 'shotgun' | 'sniper' | 'minigun';
 
 export type LootKind = 'w' | 'a' | 'm' | 'b'; // weapon / ammo / medkit / barricade kit
 
@@ -98,6 +98,8 @@ export interface YouState {
   use: number; // medkit channel finishes at (server ms)
   dead: number; // respawn at (server ms), 0 = alive
   inv: number; // spawn invulnerability until (server ms)
+  gi: number; // Goliath reward invulnerability until (server ms)
+  gm: number; // Goliath reward minigun until (server ms)
 }
 
 export interface FireCmd {
