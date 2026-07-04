@@ -17,6 +17,9 @@ export interface LootItem {
   res?: number; // reserve ammo bundled with weapon
   at?: AmmoType; // k === 'a'
   n?: number; // ammo amount
+  sx?: number; // optional client pop animation start x
+  sy?: number; // optional client pop animation start y
+  sz?: number; // optional client pop animation start z
 }
 
 export interface BarricadeState {
