@@ -35,6 +35,9 @@ export class Hud {
   private hitmark = $('hitmarker');
   private vignette = $('vignette');
   private invuln = $('invuln');
+  private compassStrip = $('compass-strip');
+  private compassHeading = $('compass-heading');
+  private compassTicks: HTMLDivElement[] = [];
   private bossBar = $('boss-bar');
   private bossLabel = $('boss-label');
   private bossFill = $('boss-fill');
@@ -44,6 +47,16 @@ export class Hud {
   private deathBy = $('death-by');
   private deathTimer = $('death-timer');
   private vignetteT: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    for (let offset = -180; offset <= 180; offset += 5) {
+      const tick = document.createElement('div');
+      tick.className = 'compass-tick';
+      tick.dataset.offset = String(offset);
+      this.compassStrip.append(tick);
+      this.compassTicks.push(tick);
+    }
+  }
 
   show(): void {
     this.hud.classList.remove('hidden');
@@ -124,6 +137,35 @@ export class Hud {
 
   setInvuln(on: boolean): void {
     this.invuln.classList.toggle('hidden', !on);
+  }
+
+  setCompass(yaw: number): void {
+    const heading = (((-yaw * 180) / Math.PI) % 360 + 360) % 360;
+    const displayHeading = Math.round(heading) % 360;
+    const baseHeading = Math.floor(heading / 5) * 5;
+    const fractionalOffset = heading - baseHeading;
+    this.compassHeading.textContent = displayHeading.toString().padStart(3, '0');
+
+    this.compassTicks.forEach((tick, i) => {
+      const offset = (i - Math.floor(this.compassTicks.length / 2)) * 5;
+      const deg = (baseHeading + offset + 360) % 360;
+      const major = deg % 30 === 0;
+      const medium = deg % 10 === 0;
+      tick.classList.toggle('major', major);
+      tick.classList.toggle('medium', !major && medium);
+      tick.style.left = `calc(50% + ${(offset - fractionalOffset) * 3.8}px)`;
+      tick.textContent = major ? this.compassLabel(deg) : '';
+    });
+  }
+
+  private compassLabel(deg: number): string {
+    switch (deg) {
+      case 0: return 'N';
+      case 90: return 'E';
+      case 180: return 'S';
+      case 270: return 'W';
+      default: return String(deg);
+    }
   }
 
   // frac null = no boss; descending shows an INBOUND label instead of hp drain

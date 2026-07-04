@@ -747,6 +747,7 @@ export class ClientGame {
     );
 
     this.bossView.update(dt, this.effects);
+    this.hud.setCompass(this.input.yaw);
     this.hud.setBoss(this.bossView.hpFrac, this.bossView.state?.ph === 0);
 
     this.updateGhost();
