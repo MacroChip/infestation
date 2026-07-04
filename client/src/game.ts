@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import {
+  BAR_PLACE_DISTANCE,
   CLIENT_STEP,
   INPUT_BATCH,
   INTERP_DELAY_MS,
@@ -698,8 +699,8 @@ export class ClientGame {
     }
     const yaw = this.input.yaw;
     const fwd = dirFromYawPitch(yaw, 0);
-    const gx = clamp(this.pred.x + fwd.x * 2.6, -72, 72);
-    const gz = clamp(this.pred.z + fwd.z * 2.6, -72, 72);
+    const gx = clamp(this.pred.x + fwd.x * BAR_PLACE_DISTANCE, -72, 72);
+    const gz = clamp(this.pred.z + fwd.z * BAR_PLACE_DISTANCE, -72, 72);
     const res = validatePlacement(
       gx,
       gz,

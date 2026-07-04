@@ -6,7 +6,7 @@
 //   npm run loadtest -- --bots 12 --seconds 30 --url ws://host:8081
 
 import WebSocket from 'ws';
-import { PROTOCOL_VERSION } from '../shared/constants';
+import { BAR_PLACE_DISTANCE, PROTOCOL_VERSION } from '../shared/constants';
 import type { ClientMsg, InputCmd, LootItem, PlayerPublic, ServerMsg, YouState } from '../shared/types';
 
 interface Args {
@@ -187,7 +187,7 @@ class Bot {
       if (me.kits > 0 && Math.random() < 0.004) {
         const fx = -Math.sin(yaw);
         const fz = -Math.cos(yaw);
-        cmd.place = { x: me.x + fx * 2.6, z: me.z + fz * 2.6, yaw };
+        cmd.place = { x: me.x + fx * BAR_PLACE_DISTANCE, z: me.z + fz * BAR_PLACE_DISTANCE, yaw };
         stats.barricadesPlaced += 1;
       }
       if (me.meds > 0 && me.hp < 45 && me.use === 0 && Math.random() < 0.3) {

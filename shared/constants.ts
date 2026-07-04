@@ -60,6 +60,7 @@ export const BAR_HY = 0.99; // half height: 1.1x standing character height
 export const BAR_HZ = 0.15;
 export const BAR_HP = 260;
 export const BAR_PLACE_RANGE = 4.2;
+export const BAR_PLACE_DISTANCE = 2.0; // default placement offset in front of the player (meters)
 export const BAR_PLACE_COOLDOWN_MS = 900;
 export const BAR_SPAWN_CLEARANCE = 7; // min distance to spawn points
 export const BAR_MAX_COUNT = 48;
