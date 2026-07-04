@@ -450,6 +450,8 @@ export class Game {
 
   private damagePlayer(victimPid: number, dmg: number, attackerPid: number, w: LootItem['w'] | 0, now: number): void {
     const victim = this.players.get(victimPid);
+    const attackerIsPlayer = attackerPid >= 0;
+    if (this.boss.active && attackerIsPlayer && attackerPid !== victimPid) return;
     if (!victim || !victim.alive || victim.invulnUntil > now) return;
     victim.hp = Math.max(0, victim.hp - dmg);
     this.events.push({ t: 'hit', v: victimPid, a: attackerPid, dmg });
