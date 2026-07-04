@@ -306,6 +306,15 @@ export class ClientGame {
       this.you.slots[cmd.swap];
     if (validWeaponSwap) {
       this.nextShotAt = Math.max(this.nextShotAt, now + SWAP_FIRE_LOCKOUT_MS);
+      const nextSlot = this.you!.slots[cmd.swap as 0 | 1]!;
+      const nextDef = WEAPONS[nextSlot.w];
+      if (nextSlot.mag <= 0 && (this.you!.res[nextDef.ammo] ?? 0) > 0) {
+        cmd.rld = 1;
+        if (now - this.autoReloadAt > 250) {
+          this.audio.reload();
+          this.autoReloadAt = now;
+        }
+      }
     }
     if (this.placing && (edges.swap !== null || cmd.swap !== undefined)) {
       this.placing = false;
@@ -819,7 +828,9 @@ export class ClientGame {
     this.hud.setUseProgress(
       this.you.use > snow ? 1 - (this.you.use - snow) / MED_USE_MS : null,
     );
-    this.hud.setInvuln(this.you.inv > snow && !this.isDead);
+    const spawnProtected = this.you.inv > snow && !this.isDead;
+    this.hud.setInvuln(spawnProtected);
+    this.views.setSpawnProtected(this.myPid, spawnProtected);
     this.hud.setScope(zoomed);
 
     if (activeW !== 0 && !zoomed && !this.placing) {
