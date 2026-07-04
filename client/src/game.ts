@@ -630,7 +630,7 @@ export class ClientGame {
         break;
       case 'bossin': {
         this.hud.addKillfeed(`⚠ ${this.roster.colored(BOSS_PID)} inbound`, true);
-        this.hud.toast('something big is falling out of the sky');
+        this.hud.toast('⚠ GOLIATH INBOUND — team up! PvP damage is disabled until he dies');
         this.audio.rumbleStart();
         break;
       }
