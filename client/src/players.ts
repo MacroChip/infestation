@@ -96,17 +96,26 @@ function buildGun(w: WeaponId): THREE.Group {
     add(new THREE.BoxGeometry(0.08, 0.08, 0.52), metal, 0, 0.05, -0.64); // barrel
     add(new THREE.BoxGeometry(0.075, 0.075, 0.34), accent, 0, -0.06, -0.52); // pump/tube
     add(new THREE.BoxGeometry(0.1, 0.16, 0.16), body, 0, -0.02, 0.16); // chunky stock heel
-  } else {
+  } else if (w === 'sniper') {
     add(new THREE.BoxGeometry(0.08, 0.13, 0.78), body, 0, 0, -0.27);
     add(new THREE.BoxGeometry(0.045, 0.045, 0.7), metal, 0, 0.02, -0.95); // long thin barrel
     add(new THREE.BoxGeometry(0.06, 0.1, 0.3), metal, 0, 0.12, -0.12); // scope tube
     add(new THREE.BoxGeometry(0.055, 0.055, 0.05), accent, 0, 0.12, 0.04); // scope glass
     add(new THREE.BoxGeometry(0.09, 0.18, 0.12), body, 0, -0.02, 0.2); // skeleton stock
+  } else {
+    add(new THREE.BoxGeometry(0.16, 0.18, 0.58), body, 0, 0, -0.18); // heavy receiver
+    add(new THREE.BoxGeometry(0.24, 0.24, 0.26), metal, 0, 0, -0.58); // barrel cluster hub
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, -0.08, 0.08, -0.9); // upper-left barrel
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, 0.08, 0.08, -0.9); // upper-right barrel
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, -0.08, -0.08, -0.9); // lower-left barrel
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, 0.08, -0.08, -0.9); // lower-right barrel
+    add(new THREE.BoxGeometry(0.14, 0.12, 0.22), accent, 0, -0.2, -0.1); // ammo box
+    add(new THREE.BoxGeometry(0.2, 0.04, 0.36), accent, 0, 0.14, -0.18); // top carry handle
   }
   return g;
 }
 
-const WEAPON_LIST: WeaponId[] = ['ar', 'smg', 'shotgun', 'sniper'];
+const WEAPON_LIST: WeaponId[] = ['ar', 'smg', 'shotgun', 'sniper', 'minigun'];
 
 function buildHeldBarricade(): THREE.Group {
   const g = new THREE.Group();
