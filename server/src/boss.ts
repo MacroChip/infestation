@@ -185,18 +185,28 @@ export class Boss {
   }
 
   private fireMissileSalvo(players: BossTarget[], events: GameEvent[]): void {
-    for (let i = 0; i < this.missileSalvoSize; i++) this.fireMissile(players, events);
+    for (let i = 0; i < this.missileSalvoSize; i++) this.fireMissile(players, events, i, this.missileSalvoSize);
   }
 
-  private fireMissile(players: BossTarget[], events: GameEvent[]): void {
+  private fireMissile(
+    players: BossTarget[],
+    events: GameEvent[],
+    salvoIndex = 0,
+    salvoSize = 1,
+  ): void {
     const alive = players.filter((p) => p.alive);
     if (alive.length === 0) return;
     const target = alive[Math.floor(Math.random() * alive.length)];
     const hor = norm(v3(target.x - this.x, 0, target.z - this.z));
-    // launches upward with a lean toward the target, then pitches over
-    const dir = norm(addScaled(v3(0, 1, 0), hor, 0.35));
-    const ox = this.x + hor.x * (BOSS_RADIUS + 0.4);
-    const oz = this.z + hor.z * (BOSS_RADIUS + 0.4);
+    const side = v3(hor.z, 0, -hor.x);
+    const sideOffset = (salvoIndex - (salvoSize - 1) / 2) * 1.35;
+    const launchForward = BOSS_RADIUS + 0.4;
+    // launches upward with a lean toward the target, then pitches over.
+    // Salvos fan out laterally so multiple missiles aimed at one player remain
+    // visually distinct instead of stacking into what looks like a single rocket.
+    const dir = norm(addScaled(addScaled(v3(0, 1, 0), hor, 0.35), side, sideOffset * 0.08));
+    const ox = this.x + hor.x * launchForward + side.x * sideOffset;
+    const oz = this.z + hor.z * launchForward + side.z * sideOffset;
     const m: Missile = {
       id: this.nextMissileId++,
       x: ox,
