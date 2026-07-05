@@ -421,6 +421,7 @@ export class ClientGame {
       this.effects.spawnProjectile(`c${sid}:${i}`, this.myPid, def.id, origin, d),
     );
     this.effects.muzzleFlash(addScaled(origin, center, 0.3), def.id);
+    this.views.markShot(this.myPid, def.id);
     this.audio.shot(def.id, 0, 0);
     this.input.kickView((Math.random() - 0.5) * def.kick * 0.5, def.kick * (0.8 + Math.random() * 0.4));
 
@@ -535,6 +536,7 @@ export class ClientGame {
         const dirs = pelletDirs(def, ev.yaw, ev.pit, ev.sid, ev.spr);
         dirs.forEach((d, i) => this.effects.spawnProjectile(`s${ev.ids[i]}`, ev.pid, ev.w, origin, d));
         this.effects.muzzleFlash(addScaled(origin, dirs[0], 0.3), ev.w);
+        this.views.markShot(ev.pid, ev.w);
         const { d, p } = this.panDist({ x: ev.ox, y: ev.oy, z: ev.oz });
         this.audio.shot(ev.w, d, p);
         break;
