@@ -395,8 +395,9 @@ export class Game {
     if (item.k === 'w' && item.w) {
       const idx: 0 | 1 = p.slots[0] === null ? 0 : p.slots[1] === null ? 1 : p.act;
       const existing = p.slots[idx];
-      if (existing) {
-        // swap: current weapon goes to the ground with its loaded mag
+      if (existing && existing.mag > 0) {
+        // swap: current weapon goes to the ground with its loaded mag. Empty
+        // dropped guns vanish instead of creating useless zero-round pickups.
         const dropped = this.loot.addDrop(
           {
             k: 'w',
@@ -487,8 +488,10 @@ export class Game {
     for (const slot of p.slots) {
       if (!slot) continue;
       const at = WEAPONS[slot.w].ammo;
-      drops.push({ k: 'w', w: slot.w, mag: slot.mag, res: reserveLeft[at], x: 0, y: 0, z: 0 });
-      reserveLeft[at] = 0;
+      if (slot.mag > 0) {
+        drops.push({ k: 'w', w: slot.w, mag: slot.mag, res: reserveLeft[at], x: 0, y: 0, z: 0 });
+        reserveLeft[at] = 0;
+      }
     }
     for (const at of AMMO_TYPES) {
       if (reserveLeft[at] > 0) drops.push({ k: 'a', at, n: reserveLeft[at], x: 0, y: 0, z: 0 });
@@ -640,7 +643,6 @@ export class Game {
       p.reloadEnd = 0;
       p.useEnd = 0;
       p.placing = false;
-      p.nextFire = Math.max(p.nextFire, this.goliathInvulnUntil);
     }
   }
 
