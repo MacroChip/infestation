@@ -27,6 +27,9 @@ interface View {
   gunRoot: THREE.Group;
   guns: Record<WeaponId, THREE.Group>;
   barricade: THREE.Group;
+  minigunBarrels: THREE.Group;
+  minigunSpinUntil: number;
+  minigunSpinSpeed: number;
   name?: THREE.Sprite;
   deathT: number; // -1 = alive
   lastPose: PlayerPose | null;
@@ -104,11 +107,23 @@ function buildGun(w: WeaponId): THREE.Group {
     add(new THREE.BoxGeometry(0.09, 0.18, 0.12), body, 0, -0.02, 0.2); // skeleton stock
   } else {
     add(new THREE.BoxGeometry(0.16, 0.18, 0.58), body, 0, 0, -0.18); // heavy receiver
-    add(new THREE.BoxGeometry(0.24, 0.24, 0.26), metal, 0, 0, -0.58); // barrel cluster hub
-    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, -0.08, 0.08, -0.9); // upper-left barrel
-    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, 0.08, 0.08, -0.9); // upper-right barrel
-    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, -0.08, -0.08, -0.9); // lower-left barrel
-    add(new THREE.BoxGeometry(0.05, 0.05, 0.62), metal, 0.08, -0.08, -0.9); // lower-right barrel
+    const barrelCluster = new THREE.Group();
+    barrelCluster.name = 'minigunBarrels';
+    barrelCluster.position.z = -0.9;
+    g.userData.minigunBarrels = barrelCluster;
+    g.add(barrelCluster);
+    const hub = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.26), metal);
+    hub.position.z = 0.32;
+    hub.castShadow = true;
+    barrelCluster.add(hub);
+    const barrelGeo = new THREE.BoxGeometry(0.045, 0.045, 0.68);
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const barrel = new THREE.Mesh(barrelGeo, metal);
+      barrel.position.set(Math.cos(angle) * 0.095, Math.sin(angle) * 0.095, 0);
+      barrel.castShadow = true;
+      barrelCluster.add(barrel);
+    }
     add(new THREE.BoxGeometry(0.14, 0.12, 0.22), accent, 0, -0.2, -0.1); // ammo box
     add(new THREE.BoxGeometry(0.2, 0.04, 0.36), accent, 0, 0.14, -0.18); // top carry handle
   }
@@ -189,7 +204,22 @@ export class PlayerViews {
     barricade.visible = false;
     gunRoot.add(barricade);
 
-    const view: View = { root, body, visor, spawnGlow, gunRoot, guns, barricade, deathT: -1, lastPose: null, smoothYaw: 0 };
+    const minigunBarrels = guns.minigun.userData.minigunBarrels as THREE.Group;
+    const view: View = {
+      root,
+      body,
+      visor,
+      spawnGlow,
+      gunRoot,
+      guns,
+      barricade,
+      minigunBarrels,
+      minigunSpinUntil: 0,
+      minigunSpinSpeed: 0,
+      deathT: -1,
+      lastPose: null,
+      smoothYaw: 0,
+    };
     if (!isLocal) {
       const s = nameSprite(name, color);
       s.position.y = STAND_HEIGHT + 0.45;
@@ -216,6 +246,14 @@ export class PlayerViews {
   setSpawnProtected(pid: number, on: boolean): void {
     const v = this.views.get(pid);
     if (v) v.spawnGlow.visible = on;
+  }
+
+  markShot(pid: number, weapon: WeaponId): void {
+    if (weapon !== 'minigun') return;
+    const v = this.views.get(pid);
+    if (!v) return;
+    v.minigunSpinUntil = performance.now() + 170;
+    v.minigunSpinSpeed = Math.max(v.minigunSpinSpeed, 52);
   }
 
   update(pid: number, pose: PlayerPose, dt: number, smoothTurn: boolean): void {
@@ -254,6 +292,11 @@ export class PlayerViews {
 
     for (const w of WEAPON_LIST) v.guns[w].visible = pose.weapon === w;
     v.barricade.visible = pose.weapon === 'bar';
+
+    const now = performance.now();
+    const spinTarget = pose.weapon === 'minigun' && now < v.minigunSpinUntil ? 52 : 0;
+    v.minigunSpinSpeed += (spinTarget - v.minigunSpinSpeed) * (1 - Math.exp(-14 * dt));
+    if (v.minigunSpinSpeed > 0.01) v.minigunBarrels.rotation.z += v.minigunSpinSpeed * dt;
   }
 
   muzzleWorld(pid: number, out: THREE.Vector3): boolean {
